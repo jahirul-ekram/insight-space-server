@@ -37,8 +37,12 @@ async function run() {
     })
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;
-      const result = await usersCollection.insertOne(newUser);
-      res.send(result)
+      const email = newUser.email;
+      const availableUser = await usersCollection.findOne({ email: email })
+      if(!availableUser){
+        const result = await usersCollection.insertOne(newUser);
+        res.send(result)
+      }
     })
 
 
