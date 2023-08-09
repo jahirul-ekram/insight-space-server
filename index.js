@@ -31,21 +31,22 @@ async function run() {
     // await client.connect();
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
+    const bookMarksCollection = client.db("insight-space").collection("book-marks");
 
+    // for get loggedUser 
     app.get('/users', async (req, res) => {
       const email = req.query.email;
       const result = await usersCollection.findOne({ email: email })
       res.send(result)
     })
+
+    // for get all post 
     app.get("/posts", async (req, res) => {
       const result = await postsCollection.find().toArray();
       res.send(result)
     })
 
-
-
-
-
+    // for insert users
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;
       const email = newUser.email;
@@ -56,15 +57,35 @@ async function run() {
       }
     })
 
+    // for insert post 
     app.post("/posts", async (req, res) => {
       const post = req.body;
       const result = await postsCollection.insertOne(post);
       res.send(result);
     })
-    app.patch("/reacts" , async(req , res ) =>{
+
+    // for insert book-marks
+    app.post('/book-marks', async (req, res) => {
+      const bookMarks = req.body;
+      const id = bookMarks.postId;
+      const isAvailable = await bookMarksCollection.findOne({ postId: id })
+      if (!isAvailable) {
+        const result = await bookMarksCollection.insertOne(bookMarks);
+        res.send(result)
+      }
+    })
+
+    // for insert update reacts
+    app.patch("/reacts", async (req, res) => {
       const data = req.body;
-      
-      
+      const query = { _id: new ObjectId(data.id) }
+      const updateDoc = {
+        $set: {
+          react: [data.email]
+        },
+      };
+      const result = await postsCollection.updateOne(query, updateDoc);
+      res.send(result)
     })
 
 
