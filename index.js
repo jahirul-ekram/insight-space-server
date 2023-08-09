@@ -46,6 +46,10 @@ async function run() {
       res.send(result)
     })
 
+    app.get('/comments', async (req, res) => {
+  
+    })
+
     // for insert users
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;
@@ -79,15 +83,37 @@ async function run() {
     app.patch("/reacts", async (req, res) => {
       const data = req.body;
       const query = { _id: new ObjectId(data.id) }
-      const updateDoc = {
-        $set: {
-          react: [data.email]
-        },
-      };
-      const result = await postsCollection.updateOne(query, updateDoc);
-      res.send(result)
+      const post = await postsCollection.findOne(query);
+      const react1 = post.react;
+      const available = react1.includes(data.email);
+      if (!available) {
+        const allReact = [...react1, data.email];
+        const updateDoc = {
+          $set: {
+            react: allReact,
+          },
+        };
+        const result = await postsCollection.updateOne(query, updateDoc);
+        res.send(result)
+      }
     })
 
+    app.patch("/comment", async (req, res) => {
+      const data = req.body;
+      const id = data.postId;
+      const query = { _id: new ObjectId(id) }
+      const pushCmnt = { email: data.email, comment: data.comment }
+      const post = await postsCollection.findOne(query);
+      const comment1 = post.comment;
+      const newComment = [...comment1, pushCmnt]
+      const updateDoc = {
+        $set: {
+          comment: newComment,
+        },
+      };
+      const result = await postsCollection.updateOne(query, updateDoc)
+      res.send(result)
+    })
 
 
 
