@@ -30,16 +30,18 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const usersCollection = client.db("insight-space").collection("users");
+    const postsCollection = client.db("insight-space").collection("allPosts");
 
     app.get('/users', async (req, res) => {
-      const users = await usersCollection.find().toArray();
-      res.send(users)
+      const email = req.query.email;
+      const result = await usersCollection.findOne({ email: email })
+      res.send(result)
     })
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;
       const email = newUser.email;
       const availableUser = await usersCollection.findOne({ email: email })
-      if(!availableUser){
+      if (!availableUser) {
         const result = await usersCollection.insertOne(newUser);
         res.send(result)
       }
