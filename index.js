@@ -9,7 +9,7 @@ app.use(cors())
 app.use(express.json())
 
 app.get('/', (req, res) => {
-    res.send('college server running')
+  res.send('server running')
 })
 
 // mongodb start 
@@ -31,11 +31,15 @@ async function run() {
     await client.connect();
     const usersCollection = client.db("insight-space").collection("users");
 
-    app.get('/users' , async(req , res ) =>{
-        const users = await usersCollection.find().toArray();
-        res.send(users)
+    app.get('/users', async (req, res) => {
+      const users = await usersCollection.find().toArray();
+      res.send(users)
     })
-
+    app.post("/add-user", async (req, res) => {
+      const newUser = req.body;
+      const result = await usersCollection.insertOne(newUser);
+      res.send(result)
+    })
 
 
 
@@ -54,5 +58,5 @@ run().catch(console.dir);
 
 
 app.listen(port, () => {
-    console.log(`this website run on port : ${port}`);
+  console.log(`this website run on port : ${port}`);
 })
