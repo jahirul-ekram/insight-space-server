@@ -28,7 +28,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
 
@@ -37,6 +37,15 @@ async function run() {
       const result = await usersCollection.findOne({ email: email })
       res.send(result)
     })
+    app.get("/posts", async (req, res) => {
+      const result = await postsCollection.find().toArray();
+      res.send(result)
+    })
+
+
+
+
+
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;
       const email = newUser.email;
@@ -52,7 +61,11 @@ async function run() {
       const result = await postsCollection.insertOne(post);
       res.send(result);
     })
-
+    app.patch("/reacts" , async(req , res ) =>{
+      const data = req.body;
+      const {id , email } = data;
+       console.log(id , email);
+    })
 
 
 
