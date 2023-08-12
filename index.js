@@ -42,12 +42,15 @@ async function run() {
 
     // for get all post 
     app.get("/posts", async (req, res) => {
-      const result = await postsCollection.find().toArray();
+      const result = await postsCollection.find().sort({ date: -1 }).toArray();
       res.send(result)
     })
 
-    app.get('/comments', async (req, res) => {
-  
+    app.get("/book-marks", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email }
+      const result = await bookMarksCollection.find(query).toArray();
+      res.send(result)
     })
 
     // for insert users
@@ -102,10 +105,9 @@ async function run() {
       const data = req.body;
       const id = data.postId;
       const query = { _id: new ObjectId(id) }
-      const pushCmnt = { email: data.email, comment: data.comment }
       const post = await postsCollection.findOne(query);
       const comment1 = post.comment;
-      const newComment = [...comment1, pushCmnt]
+      const newComment = [...comment1, data]
       const updateDoc = {
         $set: {
           comment: newComment,
