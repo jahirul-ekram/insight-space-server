@@ -32,6 +32,7 @@ async function run() {
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
+    const messageCollection = client.db("insight-space").collection("chatMessages");
 
     // for get loggedUser 
     app.get('/users', async (req, res) => {
@@ -117,6 +118,36 @@ async function run() {
       res.send(result)
     })
 
+
+
+    // kakon
+    app.get('/chatMessage/message/:email', async (req, res) => {
+      const email = req.params.email;
+
+      const filter = { email: email };
+      const classItem = await classCollection.findOne(filter);
+
+      if (!classItem) {
+        return res.status(404).send('Class not found');
+      }
+
+      const message = classItem.message || '';
+
+      res.send(message);
+    });
+
+    // kakon
+
+    app.post('/chatMessage/:id', async (req, res) => {
+      const { id } = req.params;
+      const { message } = req.body;
+
+      const filter = { _id: new ObjectId(id) };
+
+      const result = await messageCollection.insertOne(message);
+
+      res.send(result);
+    });
 
 
     // Send a ping to confirm a successful connection
