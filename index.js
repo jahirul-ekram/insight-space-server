@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
+const uuid = require('uuid');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -11,6 +12,11 @@ app.use(express.json())
 app.get('/', (req, res) => {
   res.send('server running')
 })
+
+function generateUniqueId() {
+  return uuid.v4(); // Generates a random UUID
+}
+
 
 // mongodb start 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -136,19 +142,31 @@ async function run() {
       res.send(message);
     });
 
-    // kakon
-
-    app.post('/chatMessage/:id', async (req, res) => {
-      const { id } = req.params;
-      const { message } = req.body;
-
-      const filter = { _id: new ObjectId(id) };
-
-      const result = await messageCollection.insertOne(message);
-
-      res.send(result);
+    
+    // for send message 
+    app.post('/chatMessage', async (req, res) => {
+      const newMessage = req.body;
+      const id = generateUniqueId();
+      const updatedMessage = { date: newMessage.message.date, id: id, data: newMessage.message.data }
+      const filter = { sender: newMessage.sender, receiver: newMessage.receiver }
+      const oldConversations = await messageCollection.findOne(filter);
+      if (!oldConversations) {
+        const insertMessage = { message: [updatedMessage], sender: newMessage.sender, receiver: newMessage.receiver }
+        const result = await messageCollection.insertOne(insertMessage);
+        res.send(result);
+      }
+      else {
+        const message = oldConversations.message;
+        const msg = [...message, updatedMessage]
+        const updateDoc = {
+          $set: {
+            message: msg
+          },
+        };
+        const result = await messageCollection.updateOne(filter, updateDoc)
+        res.send(result)
+      }
     });
-
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
