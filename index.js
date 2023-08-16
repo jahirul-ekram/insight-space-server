@@ -82,7 +82,7 @@ async function run() {
     app.post('/book-marks', async (req, res) => {
       const bookMarks = req.body;
       const id = bookMarks.postId;
-      const isAvailable = await bookMarksCollection.findOne({ postId: id })
+      const isAvailable = await bookMarksCollection.findOne({ postId: id, email: bookMarks.email })
       if (!isAvailable) {
         const result = await bookMarksCollection.insertOne(bookMarks);
         res.send(result)
@@ -136,10 +136,13 @@ async function run() {
       );
       res.send(result)
     })
+
     // for delete comment 
     app.delete("/deleteComment", async (req, res) => {
       const id = req.query.id;
-      // const result = await postsCollection.deleteOne({ "comment.commentId": id });
+      // const result = await postsCollection.updateOne(
+
+      // );
       // res.send(result)
     })
 
