@@ -136,11 +136,11 @@ async function run() {
       );
       res.send(result)
     })
-
+    // for delete comment 
     app.delete("/deleteComment", async (req, res) => {
-      const data = req.body;
-      const result = await postsCollection.deleteOne({ "comment.commentId": data.commentId });
-      res.send(result)
+      const id = req.query.id;
+      // const result = await postsCollection.deleteOne({ "comment.commentId": id });
+      // res.send(result)
     })
 
 
