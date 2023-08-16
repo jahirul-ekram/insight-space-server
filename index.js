@@ -112,7 +112,7 @@ async function run() {
       const data = req.body;
       const id = data.postId;
       const commentId = generateUniqueId();
-      const insertComment = { comment: data.comment , email: data.email, displayName: data.displayName, photoURL: data.photoURL, commentId }
+      const insertComment = { comment: data.comment, email: data.email, displayName: data.displayName, photoURL: data.photoURL, commentId }
       const query = { _id: new ObjectId(id) }
       const post = await postsCollection.findOne(query);
       const comment1 = post.comment;
@@ -126,18 +126,39 @@ async function run() {
       res.send(result)
     })
 
-  
+    // for update comment 
+    app.patch("/updateComment", async (req, res) => {
+      const data = req.body;
+      const query = { _id: new ObjectId(data.postId) }
+      const post = await postsCollection.findOne(query);
+      const comment = post.comment;
+      const myComment = comment.find(c => c.commentId === data.commentId)
+      console.log(myComment);
 
-// for my post api shamim
-  app.get('/my-post/:email', async(req, res)=> {
-  console.log(req.params.email)
-  let query = {};
-  if(req.params?.email) {
-    query = {email: req.params.email}
-  }
-  const result = await postsCollection.find(query).toArray()
-  res.send(result)
-})
+    })
+    
+    // app.patch("/updateComment", async (req, res) => {
+    //   const data = req.body;
+    //   const query = { _id: new ObjectId(data.postId) }
+    //   const post = await postsCollection.findOne(query);
+    //   const comment = post.comment;
+    //   const myComment = comment.find(c => c.commentId === data.commentId)
+    //   console.log(myComment);
+
+    // })
+
+
+
+    // for my post api shamim
+    app.get('/my-post/:email', async (req, res) => {
+      console.log(req.params.email)
+      let query = {};
+      if (req.params?.email) {
+        query = { email: req.params.email }
+      }
+      const result = await postsCollection.find(query).toArray()
+      res.send(result)
+    })
 
 
 
