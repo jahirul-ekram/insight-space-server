@@ -124,21 +124,15 @@ async function run() {
       res.send(result)
     })
 
-  
-
-// for my post api shamim
-  app.get('/my-post/:email', async(req, res)=> {
-  console.log(req.params.email)
-  let query = {};
-  if(req.params?.email) {
-    query = {email: req.params.email}
-  }
-  const result = await postsCollection.find(query).toArray()
-  res.send(result)
-})
 
 
-
+    // for my post api shamim
+    app.get("/my-posts", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email }
+      const result = await postsCollection.find(query).toArray();
+      res.send(result)
+    })
 
 
     // kakon
@@ -157,7 +151,7 @@ async function run() {
       res.send(message);
     });
 
-    
+
     // for send message 
     app.post('/chatMessage', async (req, res) => {
       const newMessage = req.body;
