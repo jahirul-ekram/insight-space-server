@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
 const uuid = require('uuid');
+const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -15,6 +16,22 @@ app.get('/', (req, res) => {
 
 function generateUniqueId() {
   return uuid.v4(); // Generates a random UUID
+}
+// jwt interceptor
+const verifyJWT = (req, res, next) => {
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+     return res.status(401).send({ error: true, message: 'unauthorized access' });
+   }
+  // bearer token
+   const token = authorization.split(' ')[1];
+   jwt.verify(token, process.env.SECURE_TOKEN, (err, decoded) => {
+     if (err) {
+       return res.status(401).send({ error: true, message: 'unauthorized access' })
+     }
+     req.decoded = decoded;
+     next();
+  })
 }
 
 
@@ -39,6 +56,14 @@ async function run() {
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
     const messageCollection = client.db("insight-space").collection("chatMessages");
+
+
+    // jwt assign
+    app.post('/jwt', (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.SECURE_TOKEN, { expiresIn: '12h' })
+      res.send({ token })
+    })
 
     // for get loggedUser 
     app.get('/users', async (req, res) => {
@@ -140,16 +165,13 @@ async function run() {
     // for delete comment 
     app.delete("/deleteComment", async (req, res) => {
       const id = req.query.id;
-      // const result = await postsCollection.updateOne(
-
-      // );
-      // res.send(result)
+      const result = await postsCollection.deleteOne({ 'comment.commentId': id });
+      res.send(result)
     })
 
 
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
-      console.log(req.params.email)
       let query = {};
       if (req.params?.email) {
         query = { email: req.params.email }
@@ -160,7 +182,7 @@ async function run() {
 
     // for my post api shamim
 
-    app.get("/my-posts", async (req, res) => {
+    app.get("/my-posts", verifyJWT , async (req, res) => {
       const email = req.query.userEmail;
       const query = { userEmail: email }
       const result = await postsCollection.find(query).toArray();
