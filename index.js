@@ -111,10 +111,12 @@ async function run() {
     app.patch("/comment", async (req, res) => {
       const data = req.body;
       const id = data.postId;
+      const commentId = generateUniqueId();
+      const insertComment = { comment: data.comment, email: data.email, displayName: data.displayName, photoURL: data.photoURL, commentId }
       const query = { _id: new ObjectId(id) }
       const post = await postsCollection.findOne(query);
       const comment1 = post.comment;
-      const newComment = [...comment1, data]
+      const newComment = [...comment1, insertComment]
       const updateDoc = {
         $set: {
           comment: newComment,
@@ -125,6 +127,33 @@ async function run() {
     })
 
 
+    // for update comment 
+    app.patch("/updateComment", async (req, res) => {
+      const data = req.body;
+      const result = await postsCollection.updateOne(
+        { "comment.commentId": data.commentId },
+        { $set: { "comment.$.comment": data.updateComment } }
+      );
+      res.send(result)
+    })
+
+    app.delete("/deleteComment", async (req, res) => {
+      const data = req.body;
+      const result = await postsCollection.deleteOne({ "comment.commentId": data.commentId });
+      res.send(result)
+    })
+
+
+    // for my post api shamim
+    app.get('/my-post/:email', async (req, res) => {
+      console.log(req.params.email)
+      let query = {};
+      if (req.params?.email) {
+        query = { email: req.params.email }
+      }
+      const result = await postsCollection.find(query).toArray()
+      res.send(result)
+    })
 
     // for my post api shamim
 
@@ -140,7 +169,6 @@ async function run() {
     // kakon
     app.get('/chatMessage/message/:email', async (req, res) => {
       const email = req.params.email;
-
       const filter = { email: email };
       const classItem = await classCollection.findOne(filter);
 
