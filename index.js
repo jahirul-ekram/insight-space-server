@@ -19,18 +19,18 @@ function generateUniqueId() {
 }
 // jwt interceptor
 const verifyJWT = (req, res, next) => {
-    const authorization = req.headers.authorization;
-    if (!authorization) {
-     return res.status(401).send({ error: true, message: 'unauthorized access' });
-   }
-  // bearer token
-   const token = authorization.split(' ')[1];
-   jwt.verify(token, process.env.SECURE_TOKEN, (err, decoded) => {
-     if (err) {
-       return res.status(401).send({ error: true, message: 'unauthorized access' })
-     }
-     req.decoded = decoded;
-     next();
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).send({ error: true, message: 'unauthorized access' });
+  }
+  // extract  token from bearer
+  const token = authorization.split(' ')[1];
+  jwt.verify(token, process.env.SECURE_TOKEN, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ error: true, message: 'unauthorized access' })
+    }
+    req.decoded = decoded;
+    next();
   })
 }
 
@@ -97,14 +97,14 @@ async function run() {
     })
 
     // for insert post 
-    app.post("/posts", async (req, res) => {
+    app.post("/posts", verifyJWT, async (req, res) => {
       const post = req.body;
       const result = await postsCollection.insertOne(post);
       res.send(result);
     })
 
     // for insert book-marks
-    app.post('/book-marks', async (req, res) => {
+    app.post('/book-marks', verifyJWT, async (req, res) => {
       const bookMarks = req.body;
       const id = bookMarks.postId;
       const isAvailable = await bookMarksCollection.findOne({ postId: id, email: bookMarks.email })
@@ -115,7 +115,7 @@ async function run() {
     })
 
     // for insert update reacts
-    app.patch("/reacts", async (req, res) => {
+    app.patch("/reacts", verifyJWT, async (req, res) => {
       const data = req.body;
       const query = { _id: new ObjectId(data.id) }
       const post = await postsCollection.findOne(query);
@@ -133,7 +133,7 @@ async function run() {
       }
     })
 
-    app.patch("/comment", async (req, res) => {
+    app.patch("/comment", verifyJWT, async (req, res) => {
       const data = req.body;
       const id = data.postId;
       const commentId = generateUniqueId();
@@ -153,7 +153,7 @@ async function run() {
 
 
     // for update comment 
-    app.patch("/updateComment", async (req, res) => {
+    app.patch("/updateComment", verifyJWT, async (req, res) => {
       const data = req.body;
       const result = await postsCollection.updateOne(
         { "comment.commentId": data.commentId },
@@ -182,7 +182,7 @@ async function run() {
 
     // for my post api shamim
 
-    app.get("/my-posts", verifyJWT , async (req, res) => {
+    app.get("/my-posts", verifyJWT, async (req, res) => {
       const email = req.query.userEmail;
       const query = { userEmail: email }
       const result = await postsCollection.find(query).toArray();
