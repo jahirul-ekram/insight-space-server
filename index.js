@@ -127,12 +127,14 @@ async function run() {
 
 
     // for my post api shamim
+
     app.get("/my-posts", async (req, res) => {
-      const email = req.query.email;
-      const query = { email: email }
+      const email = req.query.userEmail;
+      const query = { userEmail: email }
       const result = await postsCollection.find(query).toArray();
       res.send(result)
     })
+
 
 
     // kakon
