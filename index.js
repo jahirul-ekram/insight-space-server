@@ -126,6 +126,21 @@ async function run() {
       res.send(result)
     })
 
+  
+
+// for my post api shamim
+  app.get('/my-post/:email', async(req, res)=> {
+  console.log(req.params.email)
+  let query = {};
+  if(req.params?.email) {
+    query = {email: req.params.email}
+  }
+  const result = await postsCollection.find(query).toArray()
+  res.send(result)
+})
+
+
+
 
 
     // kakon
