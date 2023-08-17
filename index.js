@@ -164,6 +164,12 @@ async function run() {
       res.send(result)
     })
 
+    // for top post api by shamim
+    app.get('/top-post', async(req, res)=>{
+      const result = await postsCollection.find().sort({ react : -1}).toArray()
+    res.send(result)
+    })
+
 
 
     // kakon
