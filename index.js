@@ -17,6 +17,13 @@ app.get('/', (req, res) => {
 function generateUniqueId() {
   return uuid.v4(); // Generates a random UUID
 }
+//// jwt assign 
+app.post('/jwt', (req, res) => {
+  const user = req.body;
+  const token = jwt.sign(user, process.env.SECURE_TOKEN, { expiresIn: '12h' })
+  res.send({ token })
+})
+
 // jwt interceptor
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
@@ -55,15 +62,37 @@ async function run() {
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
-    const messageCollection = client.db("insight-space").collection("chatMessages");
+    const feedbackCollection = client.db('insight-space').collection('feedback')
 
+    // for find admin 
+    app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
 
-    // jwt assign
-    app.post('/jwt', (req, res) => {
-      const user = req.body;
-      const token = jwt.sign(user, process.env.SECURE_TOKEN, { expiresIn: '12h' })
-      res.send({ token })
+      if (req.decoded.email !== email) {
+        res.send({ admin: false })
+      }
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      const result = { admin: user?.role === 'admin' }
+      res.send(result);
     })
+
+    // for verify by admin 
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== 'admin') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+
+    app.get("/allUsers", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result)
+    })
+
 
     // for get loggedUser 
     app.get('/users', async (req, res) => {
@@ -155,6 +184,26 @@ async function run() {
       };
       const result = await postsCollection.updateOne(query, updateDoc)
       res.send(result)
+    })
+
+     // Feedback (Sumaiya Akhter)
+     app.get('/feedback', async(req, res) =>{
+      console.log(req.query.email);
+      let query = {};
+      if(req.query?.email){
+        query = {email: req.query.email}
+      }
+      const result = await feedbackCollection.find(query).toArray();
+      res.send(result);
+    })
+
+
+    app.post('/feedback', async (req, res) => {
+      const feedback = req.body;
+      // console.log(feedback);
+      const result = await feedbackCollection.insertOne(feedback);
+      res.send(result);
+
     })
 
 
