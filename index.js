@@ -103,6 +103,12 @@ async function run() {
       res.send(result);
     })
 
+    // blog post api - tanjir 
+    app.get("/blog", async (req, res) => {
+      const result = await postsCollection.find({ category: "blog" }).sort({ date: - 1 }).toArray();
+      res.send(result)
+    })
+
     // for insert book-marks
     app.post('/book-marks', verifyJWT, async (req, res) => {
       const bookMarks = req.body;
@@ -190,9 +196,9 @@ async function run() {
     })
 
     // for top post api by shamim
-    app.get('/top-post', async(req, res)=>{
-      const result = await postsCollection.find().sort({ react : -1}).toArray()
-    res.send(result)
+    app.get('/top-post', async (req, res) => {
+      const result = await postsCollection.find().sort({ react: -1 }).toArray()
+      res.send(result)
     })
 
 
