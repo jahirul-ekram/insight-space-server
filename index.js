@@ -17,6 +17,13 @@ app.get('/', (req, res) => {
 function generateUniqueId() {
   return uuid.v4(); // Generates a random UUID
 }
+//// jwt assign 
+app.post('/jwt', (req, res) => {
+  const user = req.body;
+  const token = jwt.sign(user, process.env.SECURE_TOKEN, { expiresIn: '12h' })
+  res.send({ token })
+})
+
 // jwt interceptor
 const verifyJWT = (req, res, next) => {
   const authorization = req.headers.authorization;
