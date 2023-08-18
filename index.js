@@ -65,6 +65,36 @@ async function run() {
       res.send({ token })
     })
 
+    // for find admin 
+    app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ admin: false })
+      }
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      const result = { admin: user?.role === 'admin' }
+      res.send(result);
+    })
+
+    // for verify by admin 
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== 'admin') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+
+    app.get("/allUsers", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result)
+    })
+
+
     // for get loggedUser 
     app.get('/users', async (req, res) => {
       const email = req.query.email;
@@ -190,9 +220,9 @@ async function run() {
     })
 
     // for top post api by shamim
-    app.get('/top-post', async(req, res)=>{
-      const result = await postsCollection.find().sort({ react : -1}).toArray()
-    res.send(result)
+    app.get('/top-post', async (req, res) => {
+      const result = await postsCollection.find().sort({ react: -1 }).toArray()
+      res.send(result)
     })
 
 
