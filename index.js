@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
+const uuid = require('uuid');
+const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -11,6 +13,27 @@ app.use(express.json())
 app.get('/', (req, res) => {
   res.send('server running')
 })
+
+function generateUniqueId() {
+  return uuid.v4(); // Generates a random UUID
+}
+// jwt interceptor
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).send({ error: true, message: 'unauthorized access' });
+  }
+  // extract  token from bearer
+  const token = authorization.split(' ')[1];
+  jwt.verify(token, process.env.SECURE_TOKEN, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ error: true, message: 'unauthorized access' })
+    }
+    req.decoded = decoded;
+    next();
+  })
+}
+
 
 // mongodb start 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -32,7 +55,6 @@ async function run() {
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
-    const feedbackCollection = client.db('insight-space').collection('feedback')
 
     // for get loggedUser 
     app.get('/users', async (req, res) => {
@@ -66,17 +88,17 @@ async function run() {
     })
 
     // for insert post 
-    app.post("/posts", async (req, res) => {
+    app.post("/posts", verifyJWT, async (req, res) => {
       const post = req.body;
       const result = await postsCollection.insertOne(post);
       res.send(result);
     })
 
     // for insert book-marks
-    app.post('/book-marks', async (req, res) => {
+    app.post('/book-marks', verifyJWT, async (req, res) => {
       const bookMarks = req.body;
       const id = bookMarks.postId;
-      const isAvailable = await bookMarksCollection.findOne({ postId: id })
+      const isAvailable = await bookMarksCollection.findOne({ postId: id, email: bookMarks.email })
       if (!isAvailable) {
         const result = await bookMarksCollection.insertOne(bookMarks);
         res.send(result)
@@ -84,7 +106,7 @@ async function run() {
     })
 
     // for insert update reacts
-    app.patch("/reacts", async (req, res) => {
+    app.patch("/reacts", verifyJWT, async (req, res) => {
       const data = req.body;
       const query = { _id: new ObjectId(data.id) }
       const post = await postsCollection.findOne(query);
@@ -102,13 +124,15 @@ async function run() {
       }
     })
 
-    app.patch("/comment", async (req, res) => {
+    app.patch("/comment", verifyJWT, async (req, res) => {
       const data = req.body;
       const id = data.postId;
+      const commentId = generateUniqueId();
+      const insertComment = { comment: data.comment, email: data.email, displayName: data.displayName, photoURL: data.photoURL, commentId }
       const query = { _id: new ObjectId(id) }
       const post = await postsCollection.findOne(query);
       const comment1 = post.comment;
-      const newComment = [...comment1, data]
+      const newComment = [...comment1, insertComment]
       const updateDoc = {
         $set: {
           comment: newComment,
@@ -139,6 +163,91 @@ async function run() {
     })
 
 
+    // for update comment 
+    app.patch("/updateComment", verifyJWT, async (req, res) => {
+      const data = req.body;
+      const result = await postsCollection.updateOne(
+        { "comment.commentId": data.commentId },
+        { $set: { "comment.$.comment": data.updateComment } }
+      );
+      res.send(result)
+    })
+
+    // for delete comment 
+    app.delete("/deleteComment", async (req, res) => {
+      const id = req.query.id;
+      const result = await postsCollection.deleteOne({ 'comment.commentId': id });
+      res.send(result)
+    })
+
+
+    // for my post api shamim
+    app.get('/my-post/:email', async (req, res) => {
+      let query = {};
+      if (req.params?.email) {
+        query = { email: req.params.email }
+      }
+      const result = await postsCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    // for my post api shamim
+
+    app.get("/my-posts", verifyJWT, async (req, res) => {
+      const email = req.query.userEmail;
+      const query = { userEmail: email }
+      const result = await postsCollection.find(query).toArray();
+      res.send(result)
+    })
+
+    // for top post api by shamim
+    app.get('/top-post', async(req, res)=>{
+      const result = await postsCollection.find().sort({ react : -1}).toArray()
+    res.send(result)
+    })
+
+
+
+    // kakon
+    app.get('/chatMessage/message/:email', async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const classItem = await classCollection.findOne(filter);
+
+      if (!classItem) {
+        return res.status(404).send('Class not found');
+      }
+
+      const message = classItem.message || '';
+
+      res.send(message);
+    });
+
+
+    // for send message 
+    app.post('/chatMessage', async (req, res) => {
+      const newMessage = req.body;
+      const id = generateUniqueId();
+      const updatedMessage = { date: newMessage.message.date, id: id, data: newMessage.message.data }
+      const filter = { sender: newMessage.sender, receiver: newMessage.receiver }
+      const oldConversations = await messageCollection.findOne(filter);
+      if (!oldConversations) {
+        const insertMessage = { message: [updatedMessage], sender: newMessage.sender, receiver: newMessage.receiver }
+        const result = await messageCollection.insertOne(insertMessage);
+        res.send(result);
+      }
+      else {
+        const message = oldConversations.message;
+        const msg = [...message, updatedMessage]
+        const updateDoc = {
+          $set: {
+            message: msg
+          },
+        };
+        const result = await messageCollection.updateOne(filter, updateDoc)
+        res.send(result)
+      }
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
