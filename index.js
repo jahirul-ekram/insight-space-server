@@ -55,15 +55,7 @@ async function run() {
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
-    const messageCollection = client.db("insight-space").collection("chatMessages");
-
-
-    // jwt assign
-    app.post('/jwt', (req, res) => {
-      const user = req.body;
-      const token = jwt.sign(user, process.env.SECURE_TOKEN, { expiresIn: '12h' })
-      res.send({ token })
-    })
+    const feedbackCollection = client.db('insight-space').collection('feedback')
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -179,6 +171,26 @@ async function run() {
       };
       const result = await postsCollection.updateOne(query, updateDoc)
       res.send(result)
+    })
+
+     // Feedback (Sumaiya Akhter)
+     app.get('/feedback', async(req, res) =>{
+      console.log(req.query.email);
+      let query = {};
+      if(req.query?.email){
+        query = {email: req.query.email}
+      }
+      const result = await feedbackCollection.find(query).toArray();
+      res.send(result);
+    })
+
+
+    app.post('/feedback', async (req, res) => {
+      const feedback = req.body;
+      // console.log(feedback);
+      const result = await feedbackCollection.insertOne(feedback);
+      res.send(result);
+
     })
 
 
