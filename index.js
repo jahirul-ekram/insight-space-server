@@ -55,6 +55,7 @@ async function run() {
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
+    const feedbackCollection = client.db('insight-space').collection('feedback')
 
     // for get loggedUser 
     app.get('/users', async (req, res) => {
