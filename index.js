@@ -68,7 +68,8 @@ async function run() {
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
-    const feedbackCollection = client.db('insight-space').collection('feedback')
+    const feedbackCollection = client.db('insight-space').collection('feedback');
+    const conversationCollection = client.db("insight-space").collection("conversations");
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -192,12 +193,12 @@ async function run() {
       res.send(result)
     })
 
-     // Feedback (Sumaiya Akhter)
-     app.get('/feedback', async(req, res) =>{
+    // Feedback (Sumaiya Akhter)
+    app.get('/feedback', async (req, res) => {
       console.log(req.query.email);
       let query = {};
-      if(req.query?.email){
-        query = {email: req.query.email}
+      if (req.query?.email) {
+        query = { email: req.query.email }
       }
       const result = await feedbackCollection.find(query).toArray();
       res.send(result);
@@ -299,6 +300,44 @@ async function run() {
       }
     });
 
+
+
+
+
+
+
+    // Create a new route to retrieve conversations from the database
+    app.get('/conversations', verifyJWT, async (req, res) => {
+      const userEmail = req.decoded.email;
+      // Retrieve conversations where the user is the sender or receiver
+      const conversations = await conversationCollection.find({
+          $or: [
+              { sender: userEmail },
+              { receiver: userEmail },
+          ],
+      }).toArray();
+      res.send(conversations);
+  });
+
+
+  // Save a conversation to the database
+  app.post('/conversations', async (req, res) => {
+    const conversationData = req.body;
+
+    try {
+        const result = await conversationCollection.insertOne(conversationData);
+        res.status(200).send({ message: 'Conversation saved successfully', result });
+    } catch (error) {
+        console.error('Error saving conversation:', error);
+        res.status(500).send({ error: 'An error occurred while saving the conversation' });
+    }
+});
+
+
+
+
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -311,10 +350,9 @@ run().catch(console.dir);
 // mongodb end
 
 // chat application functionality: tanjir
-
 const io = new Server(server, {
   cors: {
-    origin: 'https://insight-space-f2643.web.app',
+    origin: 'http://localhost:5173/',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   }
 });
@@ -326,21 +364,45 @@ io.on("connection", (socket) => {
     socket.join(data);
 
     console.log(`User id: ${socket.id} joined room: ${data}`);
-
   });
 
-  socket.on("send-message", (data) => {
+  socket.on("send-message", async (data) => {
     console.log(data);
 
     socket.to(data.room).emit("receive-message", data);
 
+    // Save the message to the database
+    const conversationId = generateUniqueId();
+    const messageData = {
+      conversationId,
+      sender: data.author,
+      receiver: data.searchEmail,
+      message: data.messageData,
+      timestamp: new Date(),
+    };
+
+    await messageCollection.insertOne(messageData);
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected", socket.id)
+    console.log("User disconnected", socket.id);
   });
-
 });
+
+// ... (other routes and code)
+
+// // Create a new route to retrieve conversations from the database
+// app.get('/conversations', verifyJWT, async (req, res) => {
+//   const userEmail = req.decoded.email;
+//   // Retrieve conversations where the user is the sender or receiver
+//   const conversations = await messageCollection.find({
+//     $or: [
+//       { sender: userEmail },
+//       { receiver: userEmail },
+//     ],
+//   }).toArray();
+//   res.send(conversations);
+// });
 
 server.listen(5001, () => {
   console.log("Live chat server");
