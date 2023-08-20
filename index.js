@@ -205,9 +205,8 @@ async function run() {
     })
 
 
-    app.post('/feedback', async (req, res) => {
+    app.post('/feedback', verifyJWT, async (req, res) => {
       const feedback = req.body;
-      // console.log(feedback);
       const result = await feedbackCollection.insertOne(feedback);
       res.send(result);
 
@@ -231,7 +230,55 @@ async function run() {
       res.send(result)
     })
 
+    // delete users for admin route 
+    app.delete("/user", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.query?.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await usersCollection.deleteOne(query);
+      res.send(result)
+    })
+    //  make admin as a admin 
+    app.patch("/user", verifyJWT, verifyAdmin, async (req, res) => {
+      const data = req.body;
+      const query = { _id: new ObjectId(data?.id), email: data.email }
+      const user = await usersCollection.findOne(query);
+      if (user.role === "regular") {
+        const updateDoc = {
+          $set: {
+            role: "admin"
+          },
+        };
+        const result = await usersCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+      if (user.role === "admin") {
+        const updateDoc = {
+          $set: {
+            role: "regular"
+          },
+        };
+        const result = await usersCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    })
 
+    // admin post action 
+    app.get("/allPosts", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await postsCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.delete("/post", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.query.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await postsCollection.deleteOne(query);
+      res.send(result);
+    })
+
+
+
+
+    
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
