@@ -4,11 +4,17 @@ require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
 const app = express();
+const { Server } = require("socket.io");
+const http = require('http');
 const port = process.env.PORT || 5000;
 
 // middleware 
 app.use(cors())
 app.use(express.json())
+
+// socket.io middleware
+const server = http.createServer(app);
+// socket.io middleware
 
 app.get('/', (req, res) => {
   res.send('server running')
@@ -350,6 +356,43 @@ async function run() {
 run().catch(console.dir);
 // mongodb end
 
+// chat application functionality: tanjir
+
+const io = new Server(server, {
+  cors: {
+    origin: 'https://insight-space-f2643.web.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log(`User connected: ${socket.id}`);
+
+  socket.on("join-room", (data) => {
+    socket.join(data);
+
+    console.log(`User id: ${socket.id} joined room: ${data}`);
+
+  });
+
+  socket.on("send-message", (data) => {
+    console.log(data);
+
+    socket.to(data.room).emit("receive-message", data);
+
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected", socket.id)
+  });
+
+});
+
+server.listen(5001, () => {
+  console.log("Live chat server");
+});
+
+// chat application functionality: tanjir
 
 app.listen(port, () => {
   console.log(`this website run on port : ${port}`);
