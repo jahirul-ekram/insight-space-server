@@ -70,6 +70,8 @@ async function run() {
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
     const feedbackCollection = client.db('insight-space').collection('feedback');
     const conversationCollection = client.db("insight-space").collection("conversations");
+    const FriendRequestCollection = client.db("insight-space").collection("friend-requests");
+
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -388,18 +390,18 @@ async function run() {
     });
 
 
-  // Save a conversation to the database
-  app.post('/conversations', async (req, res) => {
-    const conversationData = req.body;
+    // Save a conversation to the database
+    app.post('/conversations', async (req, res) => {
+      const conversationData = req.body;
 
-    try {
+      try {
         const result = await conversationCollection.insertOne(conversationData);
         res.status(200).send({ message: 'Conversation saved successfully', result });
-    } catch (error) {
+      } catch (error) {
         console.error('Error saving conversation:', error);
         res.status(500).send({ error: 'An error occurred while saving the conversation' });
-    }
-});
+      }
+    });
 
 
 
@@ -414,12 +416,12 @@ async function run() {
     // Send friend request
     app.post('/friend-requests/send', verifyJWT, async (req, res) => {
       try {
-        const senderId = req.decoded.email;
-        const receiverId = req.body.receiverEmail;
+        const senderEmail = req.decoded.email;
+        const receiverId = req.body.receiverId;
 
         // Check if a request already exists
         const existingRequest = await FriendRequestCollection.findOne({
-          sender: senderId,
+          sender: senderEmail,
           receiver: receiverId,
         });
 
@@ -428,7 +430,7 @@ async function run() {
         }
 
         const newFriendRequest = {
-          sender: senderId,
+          sender: senderEmail,
           receiver: receiverId,
           status: 'pending',
         };
@@ -474,7 +476,7 @@ async function run() {
     });
 
 
-    // Get received friend requests
+    // Get received friend request
     app.get('/friend-requests/received', verifyJWT, async (req, res) => {
       try {
         const receiverId = req.decoded.email;
