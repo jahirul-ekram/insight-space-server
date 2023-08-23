@@ -4,8 +4,8 @@ require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
 const app = express();
-const { Server } = require("socket.io");
-const http = require('http');
+// const { Server } = require("socket.io");
+// const http = require('http');
 const port = process.env.PORT || 5000;
 
 // middleware 
@@ -13,7 +13,7 @@ app.use(cors())
 app.use(express.json())
 
 // socket.io middleware
-const server = http.createServer(app);
+// const server = http.createServer(app);
 // socket.io middleware
 
 app.get('/', (req, res) => {
@@ -69,7 +69,12 @@ async function run() {
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
     const feedbackCollection = client.db('insight-space').collection('feedback');
-    const conversationCollection = client.db("insight-space").collection("conversations");
+    // const conversationCollection = client.db("insight-space").collection("conversations");
+    // You can keep using your existing MongoDB client and collections
+
+    const FriendRequestCollection = client.db("insight-space").collection("friend-requests");
+
+
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -212,6 +217,12 @@ async function run() {
 
     })
 
+    // get AllFeedback for testimonials (by Kakon)
+    app.get('/testimonials', async (req, res) => {
+      const result = await feedbackCollection.find().toArray();
+      res.send(result);
+    })
+
 
     // for update comment 
     app.patch("/updateComment", verifyJWT, async (req, res) => {
@@ -278,7 +289,7 @@ async function run() {
 
 
 
-    
+
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
@@ -358,27 +369,99 @@ async function run() {
       const userEmail = req.decoded.email;
       // Retrieve conversations where the user is the sender or receiver
       const conversations = await conversationCollection.find({
-          $or: [
-              { sender: userEmail },
-              { receiver: userEmail },
-          ],
+        $or: [
+          { sender: userEmail },
+          { receiver: userEmail },
+        ],
       }).toArray();
       res.send(conversations);
-  });
+    });
 
 
-  // Save a conversation to the database
-  app.post('/conversations', async (req, res) => {
-    const conversationData = req.body;
+    // Save a conversation to the database
+    app.post('/conversations', async (req, res) => {
+      const conversationData = req.body;
 
-    try {
+      try {
         const result = await conversationCollection.insertOne(conversationData);
         res.status(200).send({ message: 'Conversation saved successfully', result });
-    } catch (error) {
+      } catch (error) {
         console.error('Error saving conversation:', error);
         res.status(500).send({ error: 'An error occurred while saving the conversation' });
-    }
-});
+      }
+    });
+
+
+
+
+
+
+
+
+
+    // Friend Request
+
+    // Send friend request
+    app.post('/friend-requests/send', verifyJWT, async (req, res) => {
+      try {
+        const senderId = req.decoded.id;
+        const receiverId = req.body.receiverId;
+
+        // Check if a request already exists
+        const existingRequest = await FriendRequestCollection.findOne({
+          sender: senderId,
+          receiver: receiverId,
+        });
+
+        if (existingRequest) {
+          return res.status(400).json({ message: 'Friend request already sent.' });
+        }
+
+        const newFriendRequest = {
+          sender: senderId,
+          receiver: receiverId,
+          status: 'pending',
+        };
+
+        await FriendRequestCollection.insertOne(newFriendRequest);
+        res.status(200).json({ message: 'Friend request sent.' });
+      } catch (error) {
+        console.error('Error sending friend request:', error);
+        res.status(500).json({ error: 'An error occurred while sending the friend request.' });
+      }
+    });
+
+    // Accept friend request
+    app.put('/friend-requests/accept/:requestId', verifyJWT, async (req, res) => {
+      try {
+        const requestId = req.params.requestId;
+        const updatedRequest = await FriendRequestCollection.findOneAndUpdate(
+          { _id: ObjectId(requestId) },
+          { $set: { status: 'accepted' } },
+          { returnOriginal: false }
+        );
+
+        if (!updatedRequest.value) {
+          return res.status(404).json({ message: 'Friend request not found.' });
+        }
+
+        // Update sender's and receiver's friend lists
+        await usersCollection.updateOne(
+          { _id: ObjectId(updatedRequest.value.sender) },
+          { $addToSet: { friends: updatedRequest.value.receiver } }
+        );
+
+        await usersCollection.updateOne(
+          { _id: ObjectId(updatedRequest.value.receiver) },
+          { $addToSet: { friends: updatedRequest.value.sender } }
+        );
+
+        res.status(200).json({ message: 'Friend request accepted.' });
+      } catch (error) {
+        console.error('Error accepting friend request:', error);
+        res.status(500).json({ error: 'An error occurred while accepting the friend request.' });
+      }
+    });
 
 
 
@@ -396,66 +479,66 @@ async function run() {
 run().catch(console.dir);
 // mongodb end
 
-// chat application functionality: tanjir
-const io = new Server(server, {
-  cors: {
-    origin: 'http://localhost:5173/',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  }
-});
-
-io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
-
-  socket.on("join-room", (data) => {
-    socket.join(data);
-
-    console.log(`User id: ${socket.id} joined room: ${data}`);
-  });
-
-  socket.on("send-message", async (data) => {
-    console.log(data);
-
-    socket.to(data.room).emit("receive-message", data);
-
-    // Save the message to the database
-    const conversationId = generateUniqueId();
-    const messageData = {
-      conversationId,
-      sender: data.author,
-      receiver: data.searchEmail,
-      message: data.messageData,
-      timestamp: new Date(),
-    };
-
-    await messageCollection.insertOne(messageData);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected", socket.id);
-  });
-});
-
-// ... (other routes and code)
-
-// // Create a new route to retrieve conversations from the database
-// app.get('/conversations', verifyJWT, async (req, res) => {
-//   const userEmail = req.decoded.email;
-//   // Retrieve conversations where the user is the sender or receiver
-//   const conversations = await messageCollection.find({
-//     $or: [
-//       { sender: userEmail },
-//       { receiver: userEmail },
-//     ],
-//   }).toArray();
-//   res.send(conversations);
+// // chat application functionality: tanjir
+// const io = new Server(server, {
+//   cors: {
+//     origin: 'http://localhost:5173/',
+//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//   }
 // });
 
-server.listen(5001, () => {
-  console.log("Live chat server");
-});
+// io.on("connection", (socket) => {
+//   console.log(`User connected: ${socket.id}`);
 
-// chat application functionality: tanjir
+//   socket.on("join-room", (data) => {
+//     socket.join(data);
+
+//     console.log(`User id: ${socket.id} joined room: ${data}`);
+//   });
+
+//   socket.on("send-message", async (data) => {
+//     console.log(data);
+
+//     socket.to(data.room).emit("receive-message", data);
+
+//     // Save the message to the database
+//     const conversationId = generateUniqueId();
+//     const messageData = {
+//       conversationId,
+//       sender: data.author,
+//       receiver: data.searchEmail,
+//       message: data.messageData,
+//       timestamp: new Date(),
+//     };
+
+//     await messageCollection.insertOne(messageData);
+//   });
+
+//   socket.on("disconnect", () => {
+//     console.log("User disconnected", socket.id);
+//   });
+// });
+
+// // ... (other routes and code)
+
+// // // Create a new route to retrieve conversations from the database
+// // app.get('/conversations', verifyJWT, async (req, res) => {
+// //   const userEmail = req.decoded.email;
+// //   // Retrieve conversations where the user is the sender or receiver
+// //   const conversations = await messageCollection.find({
+// //     $or: [
+// //       { sender: userEmail },
+// //       { receiver: userEmail },
+// //     ],
+// //   }).toArray();
+// //   res.send(conversations);
+// // });
+
+// server.listen(5001, () => {
+//   console.log("Live chat server");
+// });
+
+// // chat application functionality: tanjir
 
 app.listen(port, () => {
   console.log(`this website run on port : ${port}`);
