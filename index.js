@@ -69,12 +69,7 @@ async function run() {
     const postsCollection = client.db("insight-space").collection("allPosts");
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
     const feedbackCollection = client.db('insight-space').collection('feedback');
-    // const conversationCollection = client.db("insight-space").collection("conversations");
-    // You can keep using your existing MongoDB client and collections
-
-    const FriendRequestCollection = client.db("insight-space").collection("friend-requests");
-
-
+    const conversationCollection = client.db("insight-space").collection("conversations");
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -123,6 +118,12 @@ async function run() {
       const email = req.query.email;
       const query = { email: email }
       const result = await bookMarksCollection.find(query).toArray();
+      res.send(result)
+    })
+
+    // for get all quiz 
+    app.get("/quiz", async (req, res) => {
+      const result = await quizCollection.find().toArray();
       res.send(result)
     })
 
@@ -197,6 +198,15 @@ async function run() {
       const result = await postsCollection.updateOne(query, updateDoc)
       res.send(result)
     })
+
+    // for delete post by admin 
+    app.delete("/post", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.query?.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await postsCollection.deleteOne(query);
+      res.send(result);
+    })
+
 
     // Feedback (Sumaiya Akhter)
     app.get('/feedback', async (req, res) => {
@@ -378,18 +388,18 @@ async function run() {
     });
 
 
-    // Save a conversation to the database
-    app.post('/conversations', async (req, res) => {
-      const conversationData = req.body;
+  // Save a conversation to the database
+  app.post('/conversations', async (req, res) => {
+    const conversationData = req.body;
 
-      try {
+    try {
         const result = await conversationCollection.insertOne(conversationData);
         res.status(200).send({ message: 'Conversation saved successfully', result });
-      } catch (error) {
+    } catch (error) {
         console.error('Error saving conversation:', error);
         res.status(500).send({ error: 'An error occurred while saving the conversation' });
-      }
-    });
+    }
+});
 
 
 
