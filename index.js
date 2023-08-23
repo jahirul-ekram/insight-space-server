@@ -70,6 +70,7 @@ async function run() {
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
     const feedbackCollection = client.db('insight-space').collection('feedback');
     const conversationCollection = client.db("insight-space").collection("conversations");
+    const quizCollection = client.db("insight-space").collection("quiz");
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -118,6 +119,12 @@ async function run() {
       const email = req.query.email;
       const query = { email: email }
       const result = await bookMarksCollection.find(query).toArray();
+      res.send(result)
+    })
+
+    // for get all quiz 
+    app.get("/quiz", async (req, res) => {
+      const result = await quizCollection.find().toArray();
       res.send(result)
     })
 
@@ -193,6 +200,15 @@ async function run() {
       res.send(result)
     })
 
+    // for delete post by admin 
+    app.delete("/post", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.query?.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await postsCollection.deleteOne(query);
+      res.send(result);
+    })
+
+
     // Feedback (Sumaiya Akhter)
     app.get('/feedback', async (req, res) => {
       console.log(req.query.email);
@@ -212,8 +228,8 @@ async function run() {
 
     })
 
-     // get AllFeedback for testimonials (by Kakon)
-     app.get('/testimonials', async (req, res) => {
+    // get AllFeedback for testimonials (by Kakon)
+    app.get('/testimonials', async (req, res) => {
       const result = await feedbackCollection.find().toArray();
       res.send(result);
     })
@@ -377,7 +393,7 @@ async function run() {
     app.post('/conversations', async (req, res) => {
       const newMessage = req.body;
       const id = generateUniqueId();
-      const updatedMessage = { date: newMessage.timestamp, id: id, data: newMessage.message}
+      const updatedMessage = { date: newMessage.timestamp, id: id, data: newMessage.message }
       const filter = { sender: newMessage.sender, receiver: newMessage.receiver }
       const oldConversations = await conversationCollection.findOne(filter);
       if (!oldConversations) {
