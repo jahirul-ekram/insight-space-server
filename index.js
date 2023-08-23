@@ -212,6 +212,28 @@ async function run() {
 
     })
 
+    app.patch('/feedback/:id', async(req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedFeedback = req.body;
+      console.log(updatedFeedback);
+      const updateDoc = {
+        $set: {
+          status: feedbackCollection.status
+        },
+      };
+      const result = await feedbackCollection.updateOne(filter, updateDoc);
+      res.send(result)
+
+    })
+
+    app.delete('/feedback/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await feedbackCollection.deleteOne(query);
+      res.send(result)
+    })
+
 
     // for update comment 
     app.patch("/updateComment", verifyJWT, async (req, res) => {
