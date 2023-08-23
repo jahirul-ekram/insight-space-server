@@ -72,6 +72,7 @@ async function run() {
     const conversationCollection = client.db("insight-space").collection("conversations");
     const FriendRequestCollection = client.db("insight-space").collection("friend-requests");
 
+    // space for jahirul islam 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
@@ -208,7 +209,51 @@ async function run() {
       res.send(result);
     })
 
+    
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     //  space for Sumaiya Akther
     // Feedback (Sumaiya Akhter)
     app.get('/feedback', verifyJWT, async (req, res) => {
       console.log(req.query.email);
@@ -227,6 +272,45 @@ async function run() {
       res.send(result);
 
     })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // get AllFeedback for testimonials (by Kakon)
     app.get('/testimonials', async (req, res) => {
@@ -300,7 +384,7 @@ async function run() {
 
 
 
-
+    // space for shamim mia
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
@@ -328,7 +412,34 @@ async function run() {
 
 
 
-    // kakon
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+     
+    // space for kakon chandra 
     app.get('/chatMessage/message/:email', async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
@@ -342,6 +453,58 @@ async function run() {
 
       res.send(message);
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     // for send message 
@@ -374,7 +537,7 @@ async function run() {
 
 
 
-
+    // space for Tanjir ahmed 
     // Create a new route to retrieve conversations from the database
     app.get('/conversations', verifyJWT, async (req, res) => {
       const userEmail = req.decoded.email;
@@ -401,6 +564,42 @@ async function run() {
         res.status(500).send({ error: 'An error occurred while saving the conversation' });
       }
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
