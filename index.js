@@ -217,8 +217,8 @@ async function run() {
 
     })
 
-    // get AllFeedback for testimonials (by Kakon)
-    app.get('/testimonials', async (req, res) => {
+     // get AllFeedback for testimonials (by Kakon)
+     app.get('/testimonials', async (req, res) => {
       const result = await feedbackCollection.find().toArray();
       res.send(result);
     })
