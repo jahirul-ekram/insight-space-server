@@ -278,7 +278,7 @@ async function run() {
 
 
 
-    
+
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
@@ -358,27 +358,39 @@ async function run() {
       const userEmail = req.decoded.email;
       // Retrieve conversations where the user is the sender or receiver
       const conversations = await conversationCollection.find({
-          $or: [
-              { sender: userEmail },
-              { receiver: userEmail },
-          ],
+        $or: [
+          { sender: userEmail },
+          { receiver: userEmail },
+        ],
       }).toArray();
       res.send(conversations);
-  });
+    });
 
 
-  // Save a conversation to the database
-  app.post('/conversations', async (req, res) => {
-    const conversationData = req.body;
-
-    try {
-        const result = await conversationCollection.insertOne(conversationData);
-        res.status(200).send({ message: 'Conversation saved successfully', result });
-    } catch (error) {
-        console.error('Error saving conversation:', error);
-        res.status(500).send({ error: 'An error occurred while saving the conversation' });
-    }
-});
+    // Save a conversation to the database
+    app.post('/conversations', async (req, res) => {
+      const newMessage = req.body;
+      const id = generateUniqueId();
+      const updatedMessage = { date: newMessage.timestamp, id: id, data: newMessage.message}
+      const filter = { sender: newMessage.sender, receiver: newMessage.receiver }
+      const oldConversations = await conversationCollection.findOne(filter);
+      if (!oldConversations) {
+        const insertMessage = { message: [updatedMessage], sender: newMessage.sender, receiver: newMessage.receiver }
+        const result = await conversationCollection.insertOne(insertMessage);
+        res.send(result);
+      }
+      else {
+        const message = oldConversations.message;
+        const msg = [...message, updatedMessage]
+        const updateDoc = {
+          $set: {
+            message: msg
+          },
+        };
+        const result = await conversationCollection.updateOne(filter, updateDoc)
+        res.send(result)
+      }
+    });
 
 
 
