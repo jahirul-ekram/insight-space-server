@@ -97,7 +97,7 @@ async function run() {
     }
 
     app.get("/allUsers", verifyJWT, verifyAdmin, async (req, res) => {
-      const result = await usersCollection.find().toArray();
+      const result = await usersCollection.find().sort({ date: -1 }).toArray();
       res.send(result)
     })
 
@@ -210,7 +210,7 @@ async function run() {
 
 
     // Feedback (Sumaiya Akhter)
-    app.get('/feedback', async (req, res) => {
+    app.get('/feedback', verifyJWT, async (req, res) => {
       console.log(req.query.email);
       let query = {};
       if (req.query?.email) {
@@ -286,7 +286,7 @@ async function run() {
 
     // admin post action 
     app.get("/allPosts", verifyJWT, verifyAdmin, async (req, res) => {
-      const result = await postsCollection.find().toArray();
+      const result = await postsCollection.find().sort({ date: -1 }).toArray();
       res.send(result)
     })
 
@@ -415,12 +415,12 @@ async function run() {
     // Send friend request
     app.post('/friend-requests/send', verifyJWT, async (req, res) => {
       try {
-        const senderId = req.decoded.email;
+        const senderEmail = req.decoded.email;
         const receiverId = req.body.receiverId;
 
         // Check if a request already exists
         const existingRequest = await FriendRequestCollection.findOne({
-          sender: senderId,
+          sender: senderEmail,
           receiver: receiverId,
         });
 
@@ -429,7 +429,7 @@ async function run() {
         }
 
         const newFriendRequest = {
-          sender: senderId,
+          sender: senderEmail,
           receiver: receiverId,
           status: 'pending',
         };
@@ -473,6 +473,24 @@ async function run() {
         res.status(500).json({ error: 'An error occurred while accepting the friend request.' });
       }
     });
+
+
+    // Get received friend request
+    app.get('/friend-requests/received', verifyJWT, async (req, res) => {
+      try {
+        const receiverId = req.decoded.email;
+
+        const receivedRequests = await FriendRequestCollection.find({ receiver: receiverId }).toArray();
+
+        res.status(200).json(receivedRequests);
+      } catch (error) {
+        console.error('Error fetching received friend requests:', error);
+        res.status(500).json({ error: 'An error occurred while fetching received friend requests.' });
+      }
+    });
+
+
+
 
 
     // Send a ping to confirm a successful connection
