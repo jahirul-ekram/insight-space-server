@@ -217,8 +217,8 @@ async function run() {
 
     })
 
-     // get AllFeedback for testimonials (by Kakon)
-     app.get('/testimonials', async (req, res) => {
+    // get AllFeedback for testimonials (by Kakon)
+    app.get('/testimonials', async (req, res) => {
       const result = await feedbackCollection.find().toArray();
       res.send(result);
     })
@@ -404,8 +404,8 @@ async function run() {
     // Send friend request
     app.post('/friend-requests/send', verifyJWT, async (req, res) => {
       try {
-        const senderId = req.decoded.id;
-        const receiverId = req.body.receiverId;
+        const senderId = req.decoded.email;
+        const receiverId = req.body.receiverEmail;
 
         // Check if a request already exists
         const existingRequest = await FriendRequestCollection.findOne({
@@ -463,6 +463,20 @@ async function run() {
       }
     });
 
+
+    // Get received friend requests
+    app.get('/friend-requests/received', verifyJWT, async (req, res) => {
+      try {
+        const receiverId = req.decoded.email;
+
+        const receivedRequests = await FriendRequestCollection.find({ receiver: receiverId }).toArray();
+
+        res.status(200).json(receivedRequests);
+      } catch (error) {
+        console.error('Error fetching received friend requests:', error);
+        res.status(500).json({ error: 'An error occurred while fetching received friend requests.' });
+      }
+    });
 
 
 
