@@ -70,6 +70,7 @@ async function run() {
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
     const feedbackCollection = client.db('insight-space').collection('feedback');
     const conversationCollection = client.db("insight-space").collection("conversations");
+    const FriendRequestCollection = client.db("insight-space").collection("friend-requests");
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -245,7 +246,7 @@ async function run() {
     })
 
     // for delete comment 
-    app.delete("/deleteComment", async (req, res) => {
+    app.delete("/deleteComment", verifyJWT, async (req, res) => {
       const id = req.query.id;
       const result = await postsCollection.deleteOne({ 'comment.commentId': id });
       res.send(result)
@@ -388,18 +389,18 @@ async function run() {
     });
 
 
-  // Save a conversation to the database
-  app.post('/conversations', async (req, res) => {
-    const conversationData = req.body;
+    // Save a conversation to the database
+    app.post('/conversations', async (req, res) => {
+      const conversationData = req.body;
 
-    try {
+      try {
         const result = await conversationCollection.insertOne(conversationData);
         res.status(200).send({ message: 'Conversation saved successfully', result });
-    } catch (error) {
+      } catch (error) {
         console.error('Error saving conversation:', error);
         res.status(500).send({ error: 'An error occurred while saving the conversation' });
-    }
-});
+      }
+    });
 
 
 
@@ -409,12 +410,12 @@ async function run() {
 
 
 
-    // Friend Request
+    // Friend Requestfriend
 
     // Send friend request
     app.post('/friend-requests/send', verifyJWT, async (req, res) => {
       try {
-        const senderId = req.decoded.id;
+        const senderId = req.decoded.email;
         const receiverId = req.body.receiverId;
 
         // Check if a request already exists
@@ -472,10 +473,6 @@ async function run() {
         res.status(500).json({ error: 'An error occurred while accepting the friend request.' });
       }
     });
-
-
-
-
 
 
     // Send a ping to confirm a successful connection
