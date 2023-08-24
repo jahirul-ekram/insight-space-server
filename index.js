@@ -72,7 +72,7 @@ async function run() {
     const conversationCollection = client.db("insight-space").collection("conversations");
     const FriendRequestCollection = client.db("insight-space").collection("friend-requests");
 
-    // space for jahirul islam 
+
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
@@ -209,51 +209,7 @@ async function run() {
       res.send(result);
     })
 
-    
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     //  space for Sumaiya Akther
     // Feedback (Sumaiya Akhter)
     app.get('/feedback', verifyJWT, async (req, res) => {
       console.log(req.query.email);
@@ -272,10 +228,10 @@ async function run() {
       res.send(result);
 
     })
-
-    app.patch('/feedback/:id', async(req, res) => {
+// xxxxxxxxxxxxxxxxx
+    app.patch('/feedback/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
-      const filter = {_id: new ObjectId(id)};
+      const filter = { _id: new ObjectId(id) };
       const updatedFeedback = req.body;
       console.log(updatedFeedback);
       const updateDoc = {
@@ -288,49 +244,12 @@ async function run() {
 
     })
 
-    app.delete('/feedback/:id', async(req, res) =>{
+    app.delete('/feedback/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) }
       const result = await feedbackCollection.deleteOne(query);
       res.send(result)
     })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -350,6 +269,7 @@ async function run() {
       );
       res.send(result)
     })
+
 
     // for delete comment 
     app.delete("/deleteComment", verifyJWT, async (req, res) => {
@@ -406,7 +326,7 @@ async function run() {
 
 
 
-    // space for shamim mia
+   
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
@@ -434,33 +354,6 @@ async function run() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     
     // space for kakon chandra 
     app.get('/chatMessage/message/:email', async (req, res) => {
       const email = req.params.email;
@@ -475,57 +368,6 @@ async function run() {
 
       res.send(message);
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -559,7 +401,6 @@ async function run() {
 
 
 
-    // space for Tanjir ahmed 
     // Create a new route to retrieve conversations from the database
     app.get('/conversations', verifyJWT, async (req, res) => {
       const userEmail = req.decoded.email;
@@ -586,49 +427,6 @@ async function run() {
         res.status(500).send({ error: 'An error occurred while saving the conversation' });
       }
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     // Friend Requestfriend
