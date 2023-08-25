@@ -98,7 +98,7 @@ async function run() {
     }
 
     app.get("/allUsers", verifyJWT, verifyAdmin, async (req, res) => {
-      const result = await usersCollection.find().toArray();
+      const result = await usersCollection.find().sort({ date: -1 }).toArray();
       res.send(result)
     })
 
@@ -211,7 +211,7 @@ async function run() {
 
 
     // Feedback (Sumaiya Akhter)
-    app.get('/feedback', async (req, res) => {
+    app.get('/feedback', verifyJWT, async (req, res) => {
       console.log(req.query.email);
       let query = {};
       if (req.query?.email) {
@@ -228,6 +228,30 @@ async function run() {
       res.send(result);
 
     })
+// xxxxxxxxxxxxxxxxx
+    app.patch('/feedback/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedFeedback = req.body;
+      console.log(updatedFeedback);
+      const updateDoc = {
+        $set: {
+          status: feedbackCollection.status
+        },
+      };
+      const result = await feedbackCollection.updateOne(filter, updateDoc);
+      res.send(result)
+
+    })
+
+    app.delete('/feedback/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await feedbackCollection.deleteOne(query);
+      res.send(result)
+    })
+
+
 
     // get AllFeedback for testimonials (by Kakon)
     app.get('/testimonials', async (req, res) => {
@@ -246,8 +270,9 @@ async function run() {
       res.send(result)
     })
 
+
     // for delete comment 
-    app.delete("/deleteComment", async (req, res) => {
+    app.delete("/deleteComment", verifyJWT, async (req, res) => {
       const id = req.query.id;
       const result = await postsCollection.deleteOne({ 'comment.commentId': id });
       res.send(result)
@@ -287,7 +312,7 @@ async function run() {
 
     // admin post action 
     app.get("/allPosts", verifyJWT, verifyAdmin, async (req, res) => {
-      const result = await postsCollection.find().toArray();
+      const result = await postsCollection.find().sort({ date: -1 }).toArray();
       res.send(result)
     })
 
@@ -301,7 +326,7 @@ async function run() {
 
 
 
-
+   
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
@@ -329,7 +354,7 @@ async function run() {
 
 
 
-    // kakon
+    // space for kakon chandra 
     app.get('/chatMessage/message/:email', async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
@@ -343,6 +368,7 @@ async function run() {
 
       res.send(message);
     });
+
 
 
     // for send message 
@@ -369,7 +395,6 @@ async function run() {
         res.send(result)
       }
     });
-
 
 
 
@@ -404,14 +429,7 @@ async function run() {
     });
 
 
-
-
-
-
-
-
-
-    // Friend Request
+    // Friend Requestfriend
 
     // Send friend request
     app.post('/friend-requests/send', verifyJWT, async (req, res) => {
