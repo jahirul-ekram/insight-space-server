@@ -476,7 +476,7 @@ async function run() {
     });
 
 
-    // Get received friend request
+    // Get received friend request  
     app.get('/friend-requests/received', verifyJWT, async (req, res) => {
       try {
         const receiverId = req.decoded.email;
