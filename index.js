@@ -71,7 +71,7 @@ async function run() {
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
       const email = req.params?.email;
       if (req.decoded.email !== email) {
-          res.send({ admin: false })
+        res.send({ admin: false })
       }
       const query = { email: email }
       const user = await usersCollection.findOne(query);
@@ -272,6 +272,23 @@ async function run() {
       res.send(result)
     })
 
+    // for delete post 
+    app.delete("/deletePost/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await postsCollection.deleteOne(query);
+      res.send(result)
+    })
+    //  for delete bookmarks 
+    app.delete("/deleteBookMark/:id", verifyJWT, async (req, res) => {
+      const email = req.decoded.email;
+      const id = req.params.id;
+      const query = { postId: id, email: email }
+      const result = await bookMarksCollection.deleteOne(query);
+      res.send(result);
+    })
+
+
     // delete users for admin route 
     app.delete("/user", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.query?.id;
@@ -315,7 +332,7 @@ async function run() {
 
 
 
-   
+
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
@@ -541,10 +558,6 @@ async function run() {
         res.status(500).json({ error: 'An error occurred while fetching friends.' });
       }
     });
-
-
-    
-
 
 
     // Send a ping to confirm a successful connection
