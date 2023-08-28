@@ -75,16 +75,16 @@ async function run() {
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
-      const email = req.params.email;
-
+      const email = req.params?.email;
       if (req.decoded.email !== email) {
-        res.send({ admin: false })
+          res.send({ admin: false })
       }
       const query = { email: email }
       const user = await usersCollection.findOne(query);
       const result = { admin: user?.role === 'admin' }
       res.send(result);
     })
+
 
     // for verify by admin 
     const verifyAdmin = async (req, res, next) => {
@@ -228,7 +228,7 @@ async function run() {
       res.send(result);
 
     })
-// xxxxxxxxxxxxxxxxx
+    // xxxxxxxxxxxxxxxxx
     app.patch('/feedback/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -311,11 +311,6 @@ async function run() {
     })
 
     // admin post action 
-    app.get("/allPosts", verifyJWT, verifyAdmin, async (req, res) => {
-      const result = await postsCollection.find().sort({ date: -1 }).toArray();
-      res.send(result)
-    })
-
     app.delete("/post", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.query.id;
       const query = { _id: new ObjectId(id) }
@@ -324,9 +319,6 @@ async function run() {
     })
 
 
-
-
-   
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
@@ -586,4 +578,4 @@ run().catch(console.dir);
 
 app.listen(port, () => {
   console.log(`this website run on port : ${port}`);
-})
+})    
