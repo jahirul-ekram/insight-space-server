@@ -64,7 +64,7 @@ async function run() {
     const bookMarksCollection = client.db("insight-space").collection("book-marks");
     const feedbackCollection = client.db('insight-space').collection('feedback');
     const conversationCollection = client.db("insight-space").collection("conversations");
-    const FriendRequestCollection = client.db("insight-space").collection("friend-requests");
+    const friendRequestCollection = client.db("insight-space").collection("friendRequests");
 
 
     // for find admin 
@@ -425,14 +425,12 @@ async function run() {
 
     // Friend Requestfriend
 
-    // Send friend request
-    app.post('/friend-requests/send', verifyJWT, async (req, res) => {
+    app.post('/friendRequests/send', verifyJWT, async (req, res) => {
       try {
         const senderEmail = req.decoded.email;
         const receiverId = req.body.receiverId;
 
-        // Check if a request already exists
-        const existingRequest = await FriendRequestCollection.findOne({
+        const existingRequest = await friendRequestCollection.findOne({
           sender: senderEmail,
           receiver: receiverId,
         });
@@ -447,7 +445,7 @@ async function run() {
           status: 'pending',
         };
 
-        await FriendRequestCollection.insertOne(newFriendRequest);
+        await friendRequestCollection.insertOne(newFriendRequest);
         res.status(200).json({ message: 'Friend request sent.' });
       } catch (error) {
         console.error('Error sending friend request:', error);
@@ -455,11 +453,10 @@ async function run() {
       }
     });
 
-    // Accept friend request
-    app.put('/friend-requests/accept/:requestId', verifyJWT, async (req, res) => {
+    app.put('/friendRequests/accept/:requestId', verifyJWT, async (req, res) => {
       try {
         const requestId = req.params.requestId;
-        const updatedRequest = await FriendRequestCollection.findOneAndUpdate(
+        const updatedRequest = await friendRequestCollection.findOneAndUpdate(
           { _id: ObjectId(requestId) },
           { $set: { status: 'accepted' } },
           { returnOriginal: false }
@@ -488,11 +485,16 @@ async function run() {
     });
 
 
+
+
+
+
+
     // Deny friend request
-    app.put('/friend-requests/deny/:requestId', verifyJWT, async (req, res) => {
+    app.put('/friendRequests/deny/:requestId', verifyJWT, async (req, res) => {
       try {
         const requestId = req.params.requestId;
-        const deletedRequest = await FriendRequestCollection.findOneAndDelete({
+        const deletedRequest = await friendRequestCollection.findOneAndDelete({
           _id: ObjectId(requestId),
           receiver: req.decoded.email,
           status: 'pending'
@@ -512,11 +514,11 @@ async function run() {
 
 
     // Get received friend request  
-    app.get('/friend-requests/received', verifyJWT, async (req, res) => {
+    app.get('/friendRequests/received', verifyJWT, async (req, res) => {
       try {
         const receiverId = req.decoded.email;
 
-        const receivedRequests = await FriendRequestCollection.find({ receiver: receiverId }).toArray();
+        const receivedRequests = await friendRequestCollection.find({ receiver: receiverId }).toArray();
 
         res.status(200).json(receivedRequests);
       } catch (error) {
