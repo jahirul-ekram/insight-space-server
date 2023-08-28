@@ -4,17 +4,11 @@ require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
 const app = express();
-// const { Server } = require("socket.io");
-// const http = require('http');
 const port = process.env.PORT || 5000;
 
 // middleware 
 app.use(cors())
 app.use(express.json())
-
-// socket.io middleware
-// const server = http.createServer(app);
-// socket.io middleware
 
 app.get('/', (req, res) => {
   res.send('server running')
@@ -228,7 +222,7 @@ async function run() {
       res.send(result);
 
     })
-// xxxxxxxxxxxxxxxxx
+    // xxxxxxxxxxxxxxxxx
     app.patch('/feedback/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -326,7 +320,7 @@ async function run() {
 
 
 
-   
+
     // for my post api shamim
     app.get('/my-post/:email', async (req, res) => {
       let query = {};
@@ -509,6 +503,28 @@ async function run() {
     });
 
 
+    // Get all friends of a user
+    app.get('/friends', verifyJWT, async (req, res) => {
+      try {
+        const userEmail = req.decoded.email;
+
+        const user = await usersCollection.findOne({ email: userEmail });
+        if (!user) {
+          return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const friendEmails = user.friends || [];
+
+        const friends = await usersCollection.find({ email: { $in: friendEmails } }).toArray();
+
+        res.status(200).json(friends);
+      } catch (error) {
+        console.error('Error fetching friends:', error);
+        res.status(500).json({ error: 'An error occurred while fetching friends.' });
+      }
+    });
+
+
 
 
 
@@ -522,67 +538,6 @@ async function run() {
 }
 run().catch(console.dir);
 // mongodb end
-
-// // chat application functionality: tanjir
-// const io = new Server(server, {
-//   cors: {
-//     origin: 'http://localhost:5173/',
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   }
-// });
-
-// io.on("connection", (socket) => {
-//   console.log(`User connected: ${socket.id}`);
-
-//   socket.on("join-room", (data) => {
-//     socket.join(data);
-
-//     console.log(`User id: ${socket.id} joined room: ${data}`);
-//   });
-
-//   socket.on("send-message", async (data) => {
-//     console.log(data);
-
-//     socket.to(data.room).emit("receive-message", data);
-
-//     // Save the message to the database
-//     const conversationId = generateUniqueId();
-//     const messageData = {
-//       conversationId,
-//       sender: data.author,
-//       receiver: data.searchEmail,
-//       message: data.messageData,
-//       timestamp: new Date(),
-//     };
-
-//     await messageCollection.insertOne(messageData);
-//   });
-
-//   socket.on("disconnect", () => {
-//     console.log("User disconnected", socket.id);
-//   });
-// });
-
-// // ... (other routes and code)
-
-// // // Create a new route to retrieve conversations from the database
-// // app.get('/conversations', verifyJWT, async (req, res) => {
-// //   const userEmail = req.decoded.email;
-// //   // Retrieve conversations where the user is the sender or receiver
-// //   const conversations = await messageCollection.find({
-// //     $or: [
-// //       { sender: userEmail },
-// //       { receiver: userEmail },
-// //     ],
-// //   }).toArray();
-// //   res.send(conversations);
-// // });
-
-// server.listen(5001, () => {
-//   console.log("Live chat server");
-// });
-
-// // chat application functionality: tanjir
 
 app.listen(port, () => {
   console.log(`this website run on port : ${port}`);
