@@ -483,6 +483,29 @@ async function run() {
     });
 
 
+    // Deny friend request
+    app.put('/friend-requests/deny/:requestId', verifyJWT, async (req, res) => {
+      try {
+        const requestId = req.params.requestId;
+        const deletedRequest = await FriendRequestCollection.findOneAndDelete({
+          _id: ObjectId(requestId),
+          receiver: req.decoded.email,
+          status: 'pending'
+        });
+
+        if (!deletedRequest.value) {
+          return res.status(404).json({ message: 'Pending friend request not found.' });
+        }
+
+        res.status(200).json({ message: 'Friend request denied.' });
+      } catch (error) {
+        console.error('Error denying friend request:', error);
+        res.status(500).json({ error: 'An error occurred while denying the friend request.' });
+      }
+    });
+
+
+
     // Get received friend request  
     app.get('/friend-requests/received', verifyJWT, async (req, res) => {
       try {
