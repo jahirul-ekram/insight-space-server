@@ -133,6 +133,23 @@ async function run() {
         res.send(result)
       }
     })
+ 
+    // for Update users profile kakan Chandra
+    app.patch("/update_profile", verifyJWT, async (req, res) => {
+      const update_profile_data = req.body;
+      const email = update_profile_data.email;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+          $set: {
+            displayName: update_profile_data.displayName, 
+            photoURL: update_profile_data.imgURL,
+            lastUpdate: update_profile_data.lastUpdate
+          },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    })
 
     // for insert post 
     app.post("/posts", verifyJWT, async (req, res) => {
@@ -357,24 +374,6 @@ async function run() {
       const result = await postsCollection.find().sort({ react: -1 }).toArray()
       res.send(result)
     })
-
-
-
-    // space for kakon chandra 
-    app.get('/chatMessage/message/:email', async (req, res) => {
-      const email = req.params.email;
-      const filter = { email: email };
-      const classItem = await classCollection.findOne(filter);
-
-      if (!classItem) {
-        return res.status(404).send('Class not found');
-      }
-
-      const message = classItem.message || '';
-
-      res.send(message);
-    });
-
 
 
     // for send message 
