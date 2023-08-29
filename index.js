@@ -272,10 +272,17 @@ async function run() {
 
 
     // for delete comment 
-    app.delete("/deleteComment", verifyJWT, async (req, res) => {
-      const id = req.query.id;
-      const result = await postsCollection.deleteOne({ 'comment.commentId': id });
-      res.send(result)
+    app.patch("/deleteComment", verifyJWT, async (req, res) => {
+      const { postId, commentId } = req.body;
+      const post = await postsCollection.findOne({ _id: new ObjectId(postId) });
+      const comments = post?.comment?.filter(c => c.commentId !== commentId);
+      const updateDoc = {
+        $set: {
+          comment: comments,
+        },
+      };
+      const result = await postsCollection.updateOne({ _id: new ObjectId(postId) }, updateDoc)
+      res.send(result);
     })
 
     // for delete post 
