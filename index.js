@@ -155,7 +155,7 @@ async function run() {
       };
       const result = await usersCollection.updateOne(filter, updateDoc, options);
       res.send(result);
-    })
+    }) 
 
     // for insert post 
     app.post("/posts", verifyJWT, async (req, res) => {
