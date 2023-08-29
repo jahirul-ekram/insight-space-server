@@ -65,6 +65,7 @@ async function run() {
     const feedbackCollection = client.db('insight-space').collection('feedback');
     const conversationCollection = client.db("insight-space").collection("conversations");
     const friendRequestCollection = client.db("insight-space").collection("friendRequests");
+    const connectionsCollection = client.db("insight-space").collection("connections");
 
 
     // for find admin 
@@ -128,9 +129,14 @@ async function run() {
       const newUser = req.body;
       const email = newUser.email;
       const availableUser = await usersCollection.findOne({ email: email })
+      const connection = {
+        email: email,
+        friends: []
+      };
       if (!availableUser) {
         const result = await usersCollection.insertOne(newUser);
-        res.send(result)
+        const result1 = await connectionsCollection.insertOne(connection);
+        res.send({ result, result1 })
       }
     })
  
@@ -283,10 +289,17 @@ async function run() {
 
 
     // for delete comment 
-    app.delete("/deleteComment", verifyJWT, async (req, res) => {
-      const id = req.query.id;
-      const result = await postsCollection.deleteOne({ 'comment.commentId': id });
-      res.send(result)
+    app.patch("/deleteComment", verifyJWT, async (req, res) => {
+      const { postId, commentId } = req.body;
+      const post = await postsCollection.findOne({ _id: new ObjectId(postId) });
+      const comments = post?.comment?.filter(c => c.commentId !== commentId);
+      const updateDoc = {
+        $set: {
+          comment: comments,
+        },
+      };
+      const result = await postsCollection.updateOne({ _id: new ObjectId(postId) }, updateDoc)
+      res.send(result);
     })
 
     // for delete post 
@@ -435,15 +448,13 @@ async function run() {
 
 
     // Friend Requestfriend
-
     app.post('/friendRequests/send', verifyJWT, async (req, res) => {
       try {
         const senderEmail = req.decoded.email;
-        const receiverId = req.body.receiverId;
-
+        const receiverEmail = req.query?.email;
         const existingRequest = await friendRequestCollection.findOne({
           sender: senderEmail,
-          receiver: receiverId,
+          receiver: receiverEmail,
         });
 
         if (existingRequest) {
@@ -452,7 +463,7 @@ async function run() {
 
         const newFriendRequest = {
           sender: senderEmail,
-          receiver: receiverId,
+          receiver: receiverEmail,
           status: 'pending',
         };
 
@@ -464,102 +475,62 @@ async function run() {
       }
     });
 
-    app.put('/friendRequests/accept/:requestId', verifyJWT, async (req, res) => {
-      try {
-        const requestId = req.params.requestId;
-        const updatedRequest = await friendRequestCollection.findOneAndUpdate(
-          { _id: ObjectId(requestId) },
-          { $set: { status: 'accepted' } },
-          { returnOriginal: false }
-        );
+    // acpt friend req 
+    app.patch('/friendRequests/accept/:requestId', verifyJWT, async (req, res) => {
+      const reqCollectionId = req.params.requestId;
+      const query = { _id: new ObjectId(reqCollectionId) }
+      const data = await friendRequestCollection.findOne(query);
+      const senderCollections = await connectionsCollection.findOne({ email: data.sender })
+      const receiverCollections = await connectionsCollection.findOne({ email: data.receiver });
 
-        if (!updatedRequest.value) {
-          return res.status(404).json({ message: 'Friend request not found.' });
-        }
+      const senderFriend = { email: data.receiver };
+      senderCollections.friends.push(senderFriend);
+      const updateDoc = {
+        $set: {
+          friends: senderCollections.friends,
+        },
+      };
+      const receiverFriend = { email: data.sender };
+      receiverCollections.friends.push(receiverFriend);
+      const updateDoc1 = {
+        $set: {
+          friends: receiverCollections.friends,
+        },
+      };
 
-        // Update sender's and receiver's friend lists
-        await usersCollection.updateOne(
-          { _id: ObjectId(updatedRequest.value.sender) },
-          { $addToSet: { friends: updatedRequest.value.receiver } }
-        );
-
-        await usersCollection.updateOne(
-          { _id: ObjectId(updatedRequest.value.receiver) },
-          { $addToSet: { friends: updatedRequest.value.sender } }
-        );
-
-        res.status(200).json({ message: 'Friend request accepted.' });
-      } catch (error) {
-        console.error('Error accepting friend request:', error);
-        res.status(500).json({ error: 'An error occurred while accepting the friend request.' });
-      }
+      const result1 = await connectionsCollection.updateOne({ email: data.sender }, updateDoc);
+      const result2 = await connectionsCollection.updateOne({ email: data.receiver }, updateDoc1);
+      const result3 = await friendRequestCollection.deleteOne(query);
+      res.send({ result1, result2, result3 })
     });
-
-
-
-
-
 
 
     // Deny friend request
-    app.put('/friendRequests/deny/:requestId', verifyJWT, async (req, res) => {
-      try {
-        const requestId = req.params.requestId;
-        const deletedRequest = await friendRequestCollection.findOneAndDelete({
-          _id: ObjectId(requestId),
-          receiver: req.decoded.email,
-          status: 'pending'
-        });
-
-        if (!deletedRequest.value) {
-          return res.status(404).json({ message: 'Pending friend request not found.' });
-        }
-
-        res.status(200).json({ message: 'Friend request denied.' });
-      } catch (error) {
-        console.error('Error denying friend request:', error);
-        res.status(500).json({ error: 'An error occurred while denying the friend request.' });
-      }
+    app.delete('/friendRequests/deny/:requestId', verifyJWT, async (req, res) => {
+      const requestId = req.params.requestId;
+      const query = { _id: new ObjectId(requestId) };
+      const result = await friendRequestCollection.deleteOne(query);
+      res.send(result)
     });
-
-
 
     // Get received friend request  
     app.get('/friendRequests/received', verifyJWT, async (req, res) => {
-      try {
-        const receiverId = req.decoded.email;
-
-        const receivedRequests = await friendRequestCollection.find({ receiver: receiverId }).toArray();
-
-        res.status(200).json(receivedRequests);
-      } catch (error) {
-        console.error('Error fetching received friend requests:', error);
-        res.status(500).json({ error: 'An error occurred while fetching received friend requests.' });
-      }
+      const email = req.decoded.email;
+      const query = { receiver: email }
+      const result = await friendRequestCollection.find(query).toArray();
+      res.send(result)
     });
 
 
     // Get all friends of a user
-    app.get('/friends', verifyJWT, async (req, res) => {
-      try {
-        const userEmail = req.decoded.email;
-
-        const user = await usersCollection.findOne({ email: userEmail });
-        if (!user) {
-          return res.status(404).json({ message: 'User not found.' });
-        }
-
-        const friendEmails = user.friends || [];
-
-        const friends = await usersCollection.find({ email: { $in: friendEmails } }).toArray();
-
-        res.status(200).json(friends);
-      } catch (error) {
-        console.error('Error fetching friends:', error);
-        res.status(500).json({ error: 'An error occurred while fetching friends.' });
-      }
+    app.get('/myFriends', verifyJWT, async (req, res) => {
+      const email = req.query?.email;
+      const friend = await connectionsCollection.findOne({ email: email });
+      const emails = friend?.friends?.map(f => f.email);
+      const allUsers = await usersCollection.find().toArray();
+      const findFriends = allUsers?.filter(u => emails?.includes(u.email));
+      res.send(findFriends);
     });
-
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
