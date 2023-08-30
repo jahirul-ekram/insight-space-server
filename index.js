@@ -65,6 +65,7 @@ async function run() {
     const feedbackCollection = client.db('insight-space').collection('feedback');
     const conversationCollection = client.db("insight-space").collection("conversations");
     const friendRequestCollection = client.db("insight-space").collection("friendRequests");
+    const quizCollection = client.db("insight-space").collection("quiz");
     const connectionsCollection = client.db("insight-space").collection("connections");
 
 
@@ -139,7 +140,7 @@ async function run() {
         res.send({ result, result1 })
       }
     })
- 
+
     // for Update users profile kakan Chandra
     app.patch("/update_profile", verifyJWT, async (req, res) => {
       const update_profile_data = req.body;
@@ -147,15 +148,15 @@ async function run() {
       const filter = { email: email };
       const options = { upsert: true };
       const updateDoc = {
-          $set: {
-            displayName: update_profile_data.displayName, 
-            photoURL: update_profile_data.imgURL,
-            lastUpdate: update_profile_data.lastUpdate
-          },
+        $set: {
+          displayName: update_profile_data.displayName,
+          photoURL: update_profile_data.photoURL,
+          lastUpdate: update_profile_data.lastUpdate
+        },
       };
       const result = await usersCollection.updateOne(filter, updateDoc, options);
       res.send(result);
-    }) 
+    })
 
     // for insert post 
     app.post("/posts", verifyJWT, async (req, res) => {
