@@ -64,30 +64,56 @@ const client = new MongoClient(uri, {
 
 
 // tanjir
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'uploads/videos'); // Specify the destination folder
+//   },
+//   filename: (req, file, cb) => {
+//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+//     const extname = path.extname(file.originalname);
+//     cb(null, 'video-' + uniqueSuffix + extname); // Save the video with a unique name
+//   },
+// });
+
+// const uploadVideo = multer({ storage: storage }).single('video');
+
+// // New route to handle video uploads
+// app.post('/api/upload-video', verifyJWT, (req, res) => {
+//   uploadVideo(req, res, (err) => {
+//     if (err) {
+//       return res.status(500).json({ message: 'Error uploading video' });
+//     }
+//     // File uploaded successfully, you can now save the video URL or information to the database
+//     const videoUrl = 'path/to/your/uploaded/videos/' + req.file.filename; // Update the path accordingly
+//     // Save the videoUrl to the database or handle as needed
+//     res.status(200).json({ message: 'Video uploaded successfully', videoUrl });
+//   });
+// });
+
+app.get('/api/files', (req, res) => {
+  fs.readdir('uploads/', (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error reading directory' });
+    }
+
+    res.status(200).json({ files });
+  });
+});
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/videos'); // Specify the destination folder
+    cb(null, 'uploads/'); // Specify the destination folder
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extname = path.extname(file.originalname);
-    cb(null, 'video-' + uniqueSuffix + extname); // Save the video with a unique name
+    cb(null, file.originalname); // Use the original file name
   },
 });
 
-const uploadVideo = multer({ storage: storage }).single('video');
+const upload = multer({ storage: storage });
 
-// New route to handle video uploads
-app.post('/api/upload-video', verifyJWT, (req, res) => {
-  uploadVideo(req, res, (err) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error uploading video' });
-    }
-    // File uploaded successfully, you can now save the video URL or information to the database
-    const videoUrl = 'path/to/your/uploaded/videos/' + req.file.filename; // Update the path accordingly
-    // Save the videoUrl to the database or handle as needed
-    res.status(200).json({ message: 'Video uploaded successfully', videoUrl });
-  });
+// Handle file upload
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  res.status(200).json({ message: 'File uploaded successfully' });
 });
 
 // tanjir
