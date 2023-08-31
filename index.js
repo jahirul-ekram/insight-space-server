@@ -1,10 +1,17 @@
 const express = require('express');
 const cors = require('cors');
+const SSLCommerzPayment = require('sslcommerz-lts')
 require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 5000;
+
+
+const store_id = process.env.Store_ID
+const store_passwd = process.env.Store_Pass
+const is_live = false //true for live, false for sandbox
+
 
 // middleware 
 app.use(cors())
@@ -65,6 +72,7 @@ async function run() {
     const feedbackCollection = client.db('insight-space').collection('feedback');
     const conversationCollection = client.db("insight-space").collection("conversations");
     const friendRequestCollection = client.db("insight-space").collection("friendRequests");
+    const BkashMethodCollection = client.db("insight-space").collection("bkashmethod");
 
 
     // for find admin 
@@ -244,6 +252,33 @@ async function run() {
       const result = await feedbackCollection.deleteOne(query);
       res.send(result)
     })
+
+
+
+    // Bkash Payment
+    app.post("/bkash", async(req,res)=>{
+      console.log(req.body)
+    })
+
+    // BkashMethod 
+    app.get('/bkashmethod', async (req, res) => {
+      console.log(req.query.email);
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
+      const result = await BkashMethodCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.post('/bkashmethod', async (req, res) => {
+      const bkash = req.body;
+      const result = await BkashMethodCollection.insertOne(bkash);
+      res.send(result);
+
+    })
+
+
 
 
 
