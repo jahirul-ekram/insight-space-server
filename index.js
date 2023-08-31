@@ -8,8 +8,13 @@ const port = process.env.PORT || 5000;
 const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
 // middleware 
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
+
+// Multer configuration for video uploads
+const multer = require('multer');
+const path = require('path');
+
 
 app.get('/', (req, res) => {
   res.send('server running')
@@ -56,6 +61,64 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+
+
+// tanjir
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, 'uploads/videos'); // Specify the destination folder
+//   },
+//   filename: (req, file, cb) => {
+//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+//     const extname = path.extname(file.originalname);
+//     cb(null, 'video-' + uniqueSuffix + extname); // Save the video with a unique name
+//   },
+// });
+
+// const uploadVideo = multer({ storage: storage }).single('video');
+
+// // New route to handle video uploads
+// app.post('/api/upload-video', verifyJWT, (req, res) => {
+//   uploadVideo(req, res, (err) => {
+//     if (err) {
+//       return res.status(500).json({ message: 'Error uploading video' });
+//     }
+//     // File uploaded successfully, you can now save the video URL or information to the database
+//     const videoUrl = 'path/to/your/uploaded/videos/' + req.file.filename; // Update the path accordingly
+//     // Save the videoUrl to the database or handle as needed
+//     res.status(200).json({ message: 'Video uploaded successfully', videoUrl });
+//   });
+// });
+
+app.get('/api/files', (req, res) => {
+  fs.readdir('uploads/', (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error reading directory' });
+    }
+
+    res.status(200).json({ files });
+  });
+});
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Specify the destination folder
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname); // Use the original file name
+  },
+});
+
+const upload = multer({ storage: storage });
+
+// Handle file upload
+app.post('/api/upload', upload.single('file'), (req, res) => {
+  res.status(200).json({ message: 'File uploaded successfully' });
+});
+
+// tanjir
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -66,6 +129,7 @@ async function run() {
     const feedbackCollection = client.db('insight-space').collection('feedback');
     const conversationCollection = client.db("insight-space").collection("conversations");
     const friendRequestCollection = client.db("insight-space").collection("friendRequests");
+    const quizCollection = client.db("insight-space").collection("quiz");
     const connectionsCollection = client.db("insight-space").collection("connections");
     const paymentCollection = client.db("insight-space").collection("payment")
 
@@ -141,7 +205,7 @@ async function run() {
         res.send({ result, result1 })
       }
     })
- 
+
     // for Update users profile kakan Chandra
     app.patch("/update_profile", verifyJWT, async (req, res) => {
       const update_profile_data = req.body;
@@ -149,15 +213,15 @@ async function run() {
       const filter = { email: email };
       const options = { upsert: true };
       const updateDoc = {
-          $set: {
-            displayName: update_profile_data.displayName, 
-            photoURL: update_profile_data.imgURL,
-            lastUpdate: update_profile_data.lastUpdate
-          },
+        $set: {
+          displayName: update_profile_data.displayName,
+          photoURL: update_profile_data.photoURL,
+          lastUpdate: update_profile_data.lastUpdate
+        },
       };
       const result = await usersCollection.updateOne(filter, updateDoc, options);
       res.send(result);
-    }) 
+    })
 
     // for insert post 
     app.post("/posts", verifyJWT, async (req, res) => {
