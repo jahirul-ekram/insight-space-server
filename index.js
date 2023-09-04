@@ -73,6 +73,7 @@ async function run() {
     const conversationCollection = client.db("insight-space").collection("conversations");
     const friendRequestCollection = client.db("insight-space").collection("friendRequests");
     const BkashMethodCollection = client.db("insight-space").collection("bkashmethod");
+    
 
 
     // for find admin 
@@ -252,6 +253,28 @@ async function run() {
       const result = await feedbackCollection.deleteOne(query);
       res.send(result)
     })
+
+
+
+    // AddQuiz
+    app.get('/addquiz', verifyJWT, async (req, res) => {
+      console.log(req.query.email);
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
+      const result = await addQuizCollection.find(query).toArray();
+      res.send(result);
+    })
+
+
+    app.post('/addquiz', verifyJWT, async (req, res) => {
+      const addQuiz = req.body;
+      const result = await addQuizCollection.insertOne(addQuiz);
+      res.send(result);
+
+    })
+
 
 
 
