@@ -333,6 +333,15 @@ async function run() {
       const result = await feedbackCollection.deleteOne(query);
       res.send(result)
     })
+    
+    // AddQuiz
+    app.post('/addquiz', verifyJWT, async (req, res) => {
+      const addQuiz = req.body;
+      // console.log(addQuiz)
+      const result = await quizCollection.insertOne(addQuiz);
+      res.send(result);
+
+    })
 
 
 
