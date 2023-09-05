@@ -19,7 +19,11 @@
     "mongoose": "^7.4.3",
     "multer": "^1.4.5-lts.1",
     "socket.io": "^4.7.2",
+<<<<<<< HEAD
     "sslcommerz-lts": "^1.1.0",
+=======
+    "stripe": "^13.3.0",
+>>>>>>> d12c95e1e74ab10cbb695f9e61e8e2465424f584
     "uuid": "^9.0.0"
   }
 }
