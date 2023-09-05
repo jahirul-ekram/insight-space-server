@@ -12,11 +12,6 @@ const stripe = require('stripe')(process.env.PAYMENT_KEY)
 app.use(cors());
 app.use(express.json());
 
-// Multer configuration for video uploads
-const multer = require('multer');
-const path = require('path');
-
-
 app.get('/', (req, res) => {
   res.send('server running')
 })
@@ -67,61 +62,6 @@ const store_id = process.env.Store_ID;
 const store_passwd = process.env.Store_Password;
 const is_live = false //true for live, false for sandbox
 
-
-// tanjir
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, 'uploads/videos'); // Specify the destination folder
-//   },
-//   filename: (req, file, cb) => {
-//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-//     const extname = path.extname(file.originalname);
-//     cb(null, 'video-' + uniqueSuffix + extname); // Save the video with a unique name
-//   },
-// });
-
-// const uploadVideo = multer({ storage: storage }).single('video');
-
-// // New route to handle video uploads
-// app.post('/api/upload-video', verifyJWT, (req, res) => {
-//   uploadVideo(req, res, (err) => {
-//     if (err) {
-//       return res.status(500).json({ message: 'Error uploading video' });
-//     }
-//     // File uploaded successfully, you can now save the video URL or information to the database
-//     const videoUrl = 'path/to/your/uploaded/videos/' + req.file.filename; // Update the path accordingly
-//     // Save the videoUrl to the database or handle as needed
-//     res.status(200).json({ message: 'Video uploaded successfully', videoUrl });
-//   });
-// });
-
-app.get('/api/files', (req, res) => {
-  fs.readdir('uploads/', (err, files) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error reading directory' });
-    }
-
-    res.status(200).json({ files });
-  });
-});
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Specify the destination folder
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname); // Use the original file name
-  },
-});
-
-const upload = multer({ storage: storage });
-
-// Handle file upload
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  res.status(200).json({ message: 'File uploaded successfully' });
-});
-
-// tanjir
 
 async function run() {
   try {
@@ -699,6 +639,8 @@ async function run() {
 
     });
 
+    // SSL Payments
+
 
 // for payments
     app.post("/create-payment-intent", verifyJWT, async (req, res) => {
@@ -742,4 +684,5 @@ run().catch(console.dir);
 // mongodb end
 
 app.listen(port, () => {
+  console.log(`Server is running on port ${port}`)
 })    
