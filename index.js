@@ -3,19 +3,14 @@ const cors = require('cors');
 require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
+const SSLCommerzPayment = require('sslcommerz-lts')
 const app = express();
 const port = process.env.PORT || 5000;
 const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
-
 // middleware 
 app.use(cors());
 app.use(express.json());
-
-// Multer configuration for video uploads
-const multer = require('multer');
-const path = require('path');
-
 
 app.get('/', (req, res) => {
   res.send('server running')
@@ -63,60 +58,10 @@ const client = new MongoClient(uri, {
 });
 
 
-// tanjir
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, 'uploads/videos'); // Specify the destination folder
-//   },
-//   filename: (req, file, cb) => {
-//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-//     const extname = path.extname(file.originalname);
-//     cb(null, 'video-' + uniqueSuffix + extname); // Save the video with a unique name
-//   },
-// });
+const store_id = process.env.Store_ID;
+const store_passwd = process.env.Store_Password;
+const is_live = false //true for live, false for sandbox
 
-// const uploadVideo = multer({ storage: storage }).single('video');
-
-// // New route to handle video uploads
-// app.post('/api/upload-video', verifyJWT, (req, res) => {
-//   uploadVideo(req, res, (err) => {
-//     if (err) {
-//       return res.status(500).json({ message: 'Error uploading video' });
-//     }
-//     // File uploaded successfully, you can now save the video URL or information to the database
-//     const videoUrl = 'path/to/your/uploaded/videos/' + req.file.filename; // Update the path accordingly
-//     // Save the videoUrl to the database or handle as needed
-//     res.status(200).json({ message: 'Video uploaded successfully', videoUrl });
-//   });
-// });
-
-app.get('/api/files', (req, res) => {
-  fs.readdir('uploads/', (err, files) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error reading directory' });
-    }
-
-    res.status(200).json({ files });
-  });
-});
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Specify the destination folder
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname); // Use the original file name
-  },
-});
-
-const upload = multer({ storage: storage });
-
-// Handle file upload
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  res.status(200).json({ message: 'File uploaded successfully' });
-});
-
-// tanjir
 
 async function run() {
   try {
@@ -130,6 +75,9 @@ async function run() {
     const friendRequestCollection = client.db("insight-space").collection("friendRequests");
     const quizCollection = client.db("insight-space").collection("quiz");
     const connectionsCollection = client.db("insight-space").collection("connections");
+
+    const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
+
     const paymentCollection = client.db("insight-space").collection("payment")
 
 
@@ -265,20 +213,6 @@ async function run() {
       }
     })
 
-    app.patch("/update-post", verifyJWT, async (req, res) => {
-      const data = req.body;
-      const { id, text } = data;
-      const email = req.decoded.email;
-      const query = { _id: new ObjectId(id), userEmail: email }
-      const updateDoc = {
-        $set: {
-          text: text,
-        },
-      };
-      const result = await postsCollection.updateOne(query, updateDoc)
-      res.send(result)
-    })
-
     app.patch("/comment", verifyJWT, async (req, res) => {
       const data = req.body;
       const id = data.postId;
@@ -304,6 +238,7 @@ async function run() {
       const result = await postsCollection.deleteOne(query);
       res.send(result);
     })
+
 
     // Feedback (Sumaiya Akhter)
     app.get('/feedback', verifyJWT, async (req, res) => {
@@ -612,11 +547,105 @@ async function run() {
 
 
 
+    // SSL Payments
 
-    // for payments
+    const transaction_Id = new ObjectId().toString();
+
+    app.post("/ssl-payment", async (req, res) => {
+
+      const formData = req.body;
+
+      const data = {
+        total_amount: formData?.number,
+        currency: 'BDT',
+        tran_id: transaction_Id, // use unique tran_id for each api call
+        success_url: `http://localhost:5000/payment/success/${transaction_Id}`,
+        fail_url: `http://localhost:5000/payment/fail/${transaction_Id}`,
+        cancel_url: 'http://localhost:3030/cancel',
+        ipn_url: 'http://localhost:3030/ipn',
+        shipping_method: 'Courier',
+        product_name: 'Computer.',
+        product_category: 'Electronic',
+        product_profile: 'general',
+        cus_name: 'Customer Name',
+        cus_email: 'customer@example.com',
+        cus_add1: 'Dhaka',
+        cus_add2: 'Dhaka',
+        cus_city: 'Dhaka',
+        cus_state: 'Dhaka',
+        cus_postcode: '1000',
+        cus_country: 'Bangladesh',
+        cus_phone: '01711111111',
+        cus_fax: '01711111111',
+        ship_name: 'Customer Name',
+        ship_add1: 'Dhaka',
+        ship_add2: 'Dhaka',
+        ship_city: 'Dhaka',
+        ship_state: 'Dhaka',
+        ship_postcode: 1000,
+        ship_country: 'Bangladesh',
+      };
+
+      console.log(data);
+
+      const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
+      sslcz.init(data).then(apiResponse => {
+        // Redirect the user to payment gateway
+        let GatewayPageURL = apiResponse.GatewayPageURL;
+        res.send({ url: GatewayPageURL });
+
+
+        const finalSslPayment = {
+          formData, paidStatus: false, transaction_Id: transaction_Id
+        };
+
+        const result = sslPaymentsCollection.insertOne(finalSslPayment);
+
+        console.log('Redirecting to: ', GatewayPageURL)
+      });
+
+
+    });
+
+    app.post("/payment/success/:transaction_Id", async (req, res) => {
+
+      console.log(req.params.transaction_Id)
+
+      const result = await sslPaymentsCollection.updateOne({ transaction_Id: req.params.transaction_Id }, {
+
+        $set: {
+          paidStatus: true,
+        }
+
+      });
+
+      if (result.modifiedCount > 0) {
+
+        res.redirect(`http://localhost:5173/payment/success/${req.params.transaction_Id}`)
+
+      };
+
+    });
+
+    app.post("/payment/fail/:transaction_Id", async (req, res) => {
+
+      const result = await sslPaymentsCollection.deleteOne({ transaction_Id: req.params.transaction_Id });
+
+      if (result.deletedCount) {
+
+        res.redirect(`http://localhost:5173/payment/fail/${req.params.transaction_Id}`)
+
+      };
+
+    });
+
+    // SSL Payments
+
+
+// for payments
     app.post("/create-payment-intent", verifyJWT, async (req, res) => {
       const { price } = req.body;
-      const amount = parseInt(price * 100);
+      const amount = parseInt(price * 100) ;
       // console.log(price, amount)
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -627,27 +656,19 @@ async function run() {
         clientSecret: paymentIntent.client_secret
       });
     })
-
-
-    app.post('/payments', async (req, res) => {
+    
+    
+    app.post('/payments', async(req, res)=>{
       const payment = req.body;
-      const insertResult = await paymentCollection.insertOne(payment)
-
+      const insertResult= await paymentCollection.insertOne(payment)
+    
       // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
       // const deleteResult = await enrollCollection.deleteMany()
-
+    
       // res.send({result: insertResult, deleteResult});
       res.send(insertResult)
     })
-
-
-
-
-
-
-
-
-
+    
 
 
 
@@ -663,4 +684,5 @@ run().catch(console.dir);
 // mongodb end
 
 app.listen(port, () => {
+  console.log(`Server is running on port ${port}`)
 })    
