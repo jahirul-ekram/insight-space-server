@@ -7,6 +7,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
+
 // middleware 
 app.use(cors());
 app.use(express.json());
@@ -60,8 +61,6 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-
-
 
 
 // tanjir
@@ -266,6 +265,20 @@ async function run() {
       }
     })
 
+    app.patch("/update-post", verifyJWT, async (req, res) => {
+      const data = req.body;
+      const { id, text } = data;
+      const email = req.decoded.email;
+      const query = { _id: new ObjectId(id), userEmail: email }
+      const updateDoc = {
+        $set: {
+          text: text,
+        },
+      };
+      const result = await postsCollection.updateOne(query, updateDoc)
+      res.send(result)
+    })
+
     app.patch("/comment", verifyJWT, async (req, res) => {
       const data = req.body;
       const id = data.postId;
@@ -291,7 +304,6 @@ async function run() {
       const result = await postsCollection.deleteOne(query);
       res.send(result);
     })
-
 
     // Feedback (Sumaiya Akhter)
     app.get('/feedback', verifyJWT, async (req, res) => {
@@ -601,10 +613,10 @@ async function run() {
 
 
 
-// for payments
+    // for payments
     app.post("/create-payment-intent", verifyJWT, async (req, res) => {
       const { price } = req.body;
-      const amount = parseInt(price * 100) ;
+      const amount = parseInt(price * 100);
       // console.log(price, amount)
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -615,19 +627,19 @@ async function run() {
         clientSecret: paymentIntent.client_secret
       });
     })
-    
-    
-    app.post('/payments', async(req, res)=>{
+
+
+    app.post('/payments', async (req, res) => {
       const payment = req.body;
-      const insertResult= await paymentCollection.insertOne(payment)
-    
+      const insertResult = await paymentCollection.insertOne(payment)
+
       // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
       // const deleteResult = await enrollCollection.deleteMany()
-    
+
       // res.send({result: insertResult, deleteResult});
       res.send(insertResult)
     })
-    
+
 
 
 
