@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const SSLCommerzPayment = require('sslcommerz-lts')
 require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
