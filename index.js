@@ -10,19 +10,14 @@ const port = process.env.PORT || 5000;
 const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
 
-const store_id = process.env.Store_ID
-const store_passwd = process.env.Store_Pass
-const is_live = false //true for live, false for sandbox
+// const store_id = process.env.Store_ID
+// const store_passwd = process.env.Store_Pass
+// const is_live = false //true for live, false for sandbox
 
 
 // middleware 
 app.use(cors());
 app.use(express.json());
-
-// Multer configuration for video uploads
-const multer = require('multer');
-const path = require('path');
-
 
 app.get('/', (req, res) => {
   res.send('server running')
@@ -70,62 +65,10 @@ const client = new MongoClient(uri, {
 });
 
 
+const store_id = process.env.Store_ID;
+const store_passwd = process.env.Store_Password;
+const is_live = false //true for live, false for sandbox
 
-
-// tanjir
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, 'uploads/videos'); // Specify the destination folder
-//   },
-//   filename: (req, file, cb) => {
-//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-//     const extname = path.extname(file.originalname);
-//     cb(null, 'video-' + uniqueSuffix + extname); // Save the video with a unique name
-//   },
-// });
-
-// const uploadVideo = multer({ storage: storage }).single('video');
-
-// // New route to handle video uploads
-// app.post('/api/upload-video', verifyJWT, (req, res) => {
-//   uploadVideo(req, res, (err) => {
-//     if (err) {
-//       return res.status(500).json({ message: 'Error uploading video' });
-//     }
-//     // File uploaded successfully, you can now save the video URL or information to the database
-//     const videoUrl = 'path/to/your/uploaded/videos/' + req.file.filename; // Update the path accordingly
-//     // Save the videoUrl to the database or handle as needed
-//     res.status(200).json({ message: 'Video uploaded successfully', videoUrl });
-//   });
-// });
-
-app.get('/api/files', (req, res) => {
-  fs.readdir('uploads/', (err, files) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error reading directory' });
-    }
-
-    res.status(200).json({ files });
-  });
-});
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Specify the destination folder
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname); // Use the original file name
-  },
-});
-
-const upload = multer({ storage: storage });
-
-// Handle file upload
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  res.status(200).json({ message: 'File uploaded successfully' });
-});
-
-// tanjir
 
 async function run() {
   try {
@@ -139,6 +82,7 @@ async function run() {
     const friendRequestCollection = client.db("insight-space").collection("friendRequests");
     const quizCollection = client.db("insight-space").collection("quiz");
     const connectionsCollection = client.db("insight-space").collection("connections");
+    const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
     const paymentCollection = client.db("insight-space").collection("payment")
 
 
@@ -203,10 +147,32 @@ async function run() {
       const newUser = req.body;
       const email = newUser.email;
       const availableUser = await usersCollection.findOne({ email: email })
+      const connection = {
+        email: email,
+        friends: []
+      };
       if (!availableUser) {
         const result = await usersCollection.insertOne(newUser);
-        res.send(result)
+        const result1 = await connectionsCollection.insertOne(connection);
+        res.send({ result, result1 })
       }
+    })
+
+    // for Update users profile kakan Chandra
+    app.patch("/update_profile", verifyJWT, async (req, res) => {
+      const update_profile_data = req.body;
+      const email = update_profile_data.email;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          displayName: update_profile_data.displayName,
+          photoURL: update_profile_data.photoURL,
+          lastUpdate: update_profile_data.lastUpdate
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
     })
 
     // for insert post 
@@ -319,64 +285,6 @@ async function run() {
       const result = await feedbackCollection.deleteOne(query);
       res.send(result)
     })
-    
-    // AddQuiz
-    app.post('/addquiz', verifyJWT, async (req, res) => {
-      const addQuiz = req.body;
-      // console.log(addQuiz)
-      const result = await quizCollection.insertOne(addQuiz);
-      res.send(result);
-
-    })
-
-
-
-    // AddQuiz
-    app.get('/addquiz', verifyJWT, async (req, res) => {
-      console.log(req.query.email);
-      let query = {};
-      if (req.query?.email) {
-        query = { email: req.query.email }
-      }
-      const result = await addQuizCollection.find(query).toArray();
-      res.send(result);
-    })
-
-
-    app.post('/addquiz', verifyJWT, async (req, res) => {
-      const addQuiz = req.body;
-      const result = await addQuizCollection.insertOne(addQuiz);
-      res.send(result);
-
-    })
-
-
-
-
-    // Bkash Payment
-    app.post("/bkash", async(req,res)=>{
-      console.log(req.body)
-    })
-
-    // BkashMethod 
-    app.get('/bkashmethod', async (req, res) => {
-      console.log(req.query.email);
-      let query = {};
-      if (req.query?.email) {
-        query = { email: req.query.email }
-      }
-      const result = await BkashMethodCollection.find(query).toArray();
-      res.send(result);
-    })
-
-    app.post('/bkashmethod', async (req, res) => {
-      const bkash = req.body;
-      const result = await BkashMethodCollection.insertOne(bkash);
-      res.send(result);
-
-    })
-
-
 
 
 
@@ -399,10 +307,17 @@ async function run() {
 
 
     // for delete comment 
-    app.delete("/deleteComment", verifyJWT, async (req, res) => {
-      const id = req.query.id;
-      const result = await postsCollection.deleteOne({ 'comment.commentId': id });
-      res.send(result)
+    app.patch("/deleteComment", verifyJWT, async (req, res) => {
+      const { postId, commentId } = req.body;
+      const post = await postsCollection.findOne({ _id: new ObjectId(postId) });
+      const comments = post?.comment?.filter(c => c.commentId !== commentId);
+      const updateDoc = {
+        $set: {
+          comment: comments,
+        },
+      };
+      const result = await postsCollection.updateOne({ _id: new ObjectId(postId) }, updateDoc)
+      res.send(result);
     })
 
     // for delete post 
@@ -492,24 +407,6 @@ async function run() {
     })
 
 
-
-    // space for kakon chandra 
-    app.get('/chatMessage/message/:email', async (req, res) => {
-      const email = req.params.email;
-      const filter = { email: email };
-      const classItem = await classCollection.findOne(filter);
-
-      if (!classItem) {
-        return res.status(404).send('Class not found');
-      }
-
-      const message = classItem.message || '';
-
-      res.send(message);
-    });
-
-
-
     // for send message 
     app.post('/chatMessage', async (req, res) => {
       const newMessage = req.body;
@@ -569,15 +466,13 @@ async function run() {
 
 
     // Friend Requestfriend
-
     app.post('/friendRequests/send', verifyJWT, async (req, res) => {
       try {
         const senderEmail = req.decoded.email;
-        const receiverId = req.body.receiverId;
-
+        const receiverEmail = req.query?.email;
         const existingRequest = await friendRequestCollection.findOne({
           sender: senderEmail,
-          receiver: receiverId,
+          receiver: receiverEmail,
         });
 
         if (existingRequest) {
@@ -586,7 +481,7 @@ async function run() {
 
         const newFriendRequest = {
           sender: senderEmail,
-          receiver: receiverId,
+          receiver: receiverEmail,
           status: 'pending',
         };
 
@@ -598,103 +493,158 @@ async function run() {
       }
     });
 
-    app.put('/friendRequests/accept/:requestId', verifyJWT, async (req, res) => {
-      try {
-        const requestId = req.params.requestId;
-        const updatedRequest = await friendRequestCollection.findOneAndUpdate(
-          { _id: ObjectId(requestId) },
-          { $set: { status: 'accepted' } },
-          { returnOriginal: false }
-        );
+    // acpt friend req 
+    app.patch('/friendRequests/accept/:requestId', verifyJWT, async (req, res) => {
+      const reqCollectionId = req.params.requestId;
+      const query = { _id: new ObjectId(reqCollectionId) }
+      const data = await friendRequestCollection.findOne(query);
+      const senderCollections = await connectionsCollection.findOne({ email: data.sender })
+      const receiverCollections = await connectionsCollection.findOne({ email: data.receiver });
 
-        if (!updatedRequest.value) {
-          return res.status(404).json({ message: 'Friend request not found.' });
-        }
+      const senderFriend = { email: data.receiver };
+      senderCollections.friends.push(senderFriend);
+      const updateDoc = {
+        $set: {
+          friends: senderCollections.friends,
+        },
+      };
+      const receiverFriend = { email: data.sender };
+      receiverCollections.friends.push(receiverFriend);
+      const updateDoc1 = {
+        $set: {
+          friends: receiverCollections.friends,
+        },
+      };
 
-        // Update sender's and receiver's friend lists
-        await usersCollection.updateOne(
-          { _id: ObjectId(updatedRequest.value.sender) },
-          { $addToSet: { friends: updatedRequest.value.receiver } }
-        );
-
-        await usersCollection.updateOne(
-          { _id: ObjectId(updatedRequest.value.receiver) },
-          { $addToSet: { friends: updatedRequest.value.sender } }
-        );
-
-        res.status(200).json({ message: 'Friend request accepted.' });
-      } catch (error) {
-        console.error('Error accepting friend request:', error);
-        res.status(500).json({ error: 'An error occurred while accepting the friend request.' });
-      }
+      const result1 = await connectionsCollection.updateOne({ email: data.sender }, updateDoc);
+      const result2 = await connectionsCollection.updateOne({ email: data.receiver }, updateDoc1);
+      const result3 = await friendRequestCollection.deleteOne(query);
+      res.send({ result1, result2, result3 })
     });
-
-
-
-
-
 
 
     // Deny friend request
-    app.put('/friendRequests/deny/:requestId', verifyJWT, async (req, res) => {
-      try {
-        const requestId = req.params.requestId;
-        const deletedRequest = await friendRequestCollection.findOneAndDelete({
-          _id: ObjectId(requestId),
-          receiver: req.decoded.email,
-          status: 'pending'
-        });
-
-        if (!deletedRequest.value) {
-          return res.status(404).json({ message: 'Pending friend request not found.' });
-        }
-
-        res.status(200).json({ message: 'Friend request denied.' });
-      } catch (error) {
-        console.error('Error denying friend request:', error);
-        res.status(500).json({ error: 'An error occurred while denying the friend request.' });
-      }
+    app.delete('/friendRequests/deny/:requestId', verifyJWT, async (req, res) => {
+      const requestId = req.params.requestId;
+      const query = { _id: new ObjectId(requestId) };
+      const result = await friendRequestCollection.deleteOne(query);
+      res.send(result)
     });
-
-
 
     // Get received friend request  
     app.get('/friendRequests/received', verifyJWT, async (req, res) => {
-      try {
-        const receiverId = req.decoded.email;
-
-        const receivedRequests = await friendRequestCollection.find({ receiver: receiverId }).toArray();
-
-        res.status(200).json(receivedRequests);
-      } catch (error) {
-        console.error('Error fetching received friend requests:', error);
-        res.status(500).json({ error: 'An error occurred while fetching received friend requests.' });
-      }
+      const email = req.decoded.email;
+      const query = { receiver: email }
+      const result = await friendRequestCollection.find(query).toArray();
+      res.send(result)
     });
 
 
     // Get all friends of a user
-    app.get('/friends', verifyJWT, async (req, res) => {
-      try {
-        const userEmail = req.decoded.email;
-
-        const user = await usersCollection.findOne({ email: userEmail });
-        if (!user) {
-          return res.status(404).json({ message: 'User not found.' });
-        }
-
-        const friendEmails = user.friends || [];
-
-        const friends = await usersCollection.find({ email: { $in: friendEmails } }).toArray();
-
-        res.status(200).json(friends);
-      } catch (error) {
-        console.error('Error fetching friends:', error);
-        res.status(500).json({ error: 'An error occurred while fetching friends.' });
-      }
+    app.get('/myFriends', verifyJWT, async (req, res) => {
+      const email = req.query?.email;
+      const friend = await connectionsCollection.findOne({ email: email });
+      const emails = friend?.friends?.map(f => f.email);
+      const allUsers = await usersCollection.find().toArray();
+      const findFriends = allUsers?.filter(u => emails?.includes(u.email));
+      res.send(findFriends);
     });
 
 
+
+    // SSL Payments
+
+    const transaction_Id = new ObjectId().toString();
+
+    app.post("/ssl-payment", async (req, res) => {
+
+      const formData = req.body;
+
+      const data = {
+        total_amount: formData?.number,
+        currency: 'BDT',
+        tran_id: transaction_Id, // use unique tran_id for each api call
+        success_url: `https://insight-space-server.vercel.app/payment/success/${transaction_Id}`,
+        fail_url: `https://insight-space-server.vercel.app/payment/fail/${transaction_Id}`,
+        cancel_url: 'http://localhost:3030/cancel',
+        ipn_url: 'http://localhost:3030/ipn',
+        shipping_method: 'Courier',
+        product_name: 'Computer.',
+        product_category: 'Electronic',
+        product_profile: 'general',
+        cus_name: 'Customer Name',
+        cus_email: 'customer@example.com',
+        cus_add1: 'Dhaka',
+        cus_add2: 'Dhaka',
+        cus_city: 'Dhaka',
+        cus_state: 'Dhaka',
+        cus_postcode: '1000',
+        cus_country: 'Bangladesh',
+        cus_phone: '01711111111',
+        cus_fax: '01711111111',
+        ship_name: 'Customer Name',
+        ship_add1: 'Dhaka',
+        ship_add2: 'Dhaka',
+        ship_city: 'Dhaka',
+        ship_state: 'Dhaka',
+        ship_postcode: 1000,
+        ship_country: 'Bangladesh',
+      };
+
+      console.log(data);
+
+      const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
+      sslcz.init(data).then(apiResponse => {
+        // Redirect the user to payment gateway
+        let GatewayPageURL = apiResponse.GatewayPageURL;
+        res.send({ url: GatewayPageURL });
+
+
+        const finalSslPayment = {
+          formData, paidStatus: false, transaction_Id: transaction_Id
+        };
+
+        const result = sslPaymentsCollection.insertOne(finalSslPayment);
+
+        console.log('Redirecting to: ', GatewayPageURL)
+      });
+
+
+    });
+
+    app.post("/payment/success/:transaction_Id", async (req, res) => {
+
+      console.log(req.params.transaction_Id)
+
+      const result = await sslPaymentsCollection.updateOne({ transaction_Id: req.params.transaction_Id }, {
+
+        $set: {
+          paidStatus: true,
+        }
+
+      });
+
+      if (result.modifiedCount > 0) {
+
+        res.redirect(`https://insight-space-f2643.web.app/payment/success/${req.params.transaction_Id}`)
+
+      };
+
+    });
+
+    app.post("/payment/fail/:transaction_Id", async (req, res) => {
+
+      const result = await sslPaymentsCollection.deleteOne({ transaction_Id: req.params.transaction_Id });
+
+      if (result.deletedCount) {
+
+        res.redirect(`https://insight-space-f2643.web.app/payment/fail/${req.params.transaction_Id}`)
+
+      };
+
+    });
+
+    // SSL Payments
 
 
 // for payments
@@ -731,14 +681,6 @@ async function run() {
       res.send(result)
     })
     
-
-
-
-
-
-
-
-
 
 
 
