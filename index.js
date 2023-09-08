@@ -1,12 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-const SSLCommerzPayment = require('sslcommerz-lts')
+// const SSLCommerzPayment = require('sslcommerz-lts')
 require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
 const SSLCommerzPayment = require('sslcommerz-lts')
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
 
 const store_id = process.env.Store_ID
@@ -699,7 +700,7 @@ async function run() {
 // for payments
     app.post("/create-payment-intent", verifyJWT, async (req, res) => {
       const { price } = req.body;
-      const amount = parseInt(price * 100) ;
+      const amount = parseInt(price  * 100) ;
       // console.log(price, amount)
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -721,6 +722,13 @@ async function run() {
     
       // res.send({result: insertResult, deleteResult});
       res.send(insertResult)
+    })
+
+    app.get("/payment-history", async (req, res) => {
+      const email = req.query.userEmail;
+      const query = { userEmail: email }
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result)
     })
     
 
