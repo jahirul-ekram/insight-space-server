@@ -280,6 +280,16 @@ async function run() {
     })
 
 
+    // AddQuiz
+    app.post('/addquiz', verifyJWT, async (req, res) => {
+      const addQuiz = req.body;
+      // console.log(addQuiz)
+      const result = await quizCollection.insertOne(addQuiz);
+      res.send(result);
+
+    })
+
+
 
     // get AllFeedback for testimonials (by Kakon)
     app.get('/testimonials', async (req, res) => {
