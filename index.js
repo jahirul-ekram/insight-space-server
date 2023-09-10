@@ -657,7 +657,7 @@ async function run() {
     // SSL Payments
 
 
-// for payments
+// for international payments methood
     app.post("/create-payment-intent", verifyJWT, async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price  * 100) ;
@@ -684,10 +684,16 @@ async function run() {
       res.send(insertResult)
     })
 
-    app.get("/payment-history", async (req, res) => {
-      const email = req.query.userEmail;
-      const query = { userEmail: email }
-      const result = await paymentCollection.find(query).toArray();
+    app.get("/payments-history", verifyJWT,  async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email }
+      const result = await paymentCollection.find(query).sort({ date: -1 }).toArray();
+      res.send(result)
+    })
+    app.delete("/delete-payment/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await paymentCollection.deleteOne(query);
       res.send(result)
     })
     
