@@ -1,7 +1,7 @@
 const express = require('express');
-// socket.io
-const http = require('http');
-const socketIo = require('socket.io');
+// // socket.io
+// const http = require('http');
+// const socketIo = require('socket.io');
 // cors
 const cors = require('cors');
 require('dotenv').config()
@@ -29,17 +29,17 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// socket.io
-const server = http.createServer(app);
-const socketIO = socketIo(server, {
-  cors: {
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST'],
-    credentials: true,
-    allowedHeaders: ['Access-Control-Allow-Origin']
-  },
-  maxHttpBufferSize: 1e8
-});
+// // socket.io
+// const server = http.createServer(app);
+// const socketIO = socketIo(server, {
+//   cors: {
+//     origin: 'http://localhost:5173',
+//     methods: ['GET', 'POST'],
+//     credentials: true,
+//     allowedHeaders: ['Access-Control-Allow-Origin']
+//   },
+//   maxHttpBufferSize: 1e8
+// });
 
 
 
@@ -749,47 +749,47 @@ async function run() {
       res.send(result)
     })
 
-    // kakon socket api-----------------
-    // get conversation users
-    app.get('/conversation/:userId', async (req, res) => {
-      try {
-        const userId = req.params.userId;
-        const conversations = await chatConversationCollection.find({ members: { $in: [userId] } }).toArray();
+    // // kakon socket api-----------------
+    // // get conversation users
+    // app.get('/conversation/:userId', async (req, res) => {
+    //   try {
+    //     const userId = req.params.userId;
+    //     const conversations = await chatConversationCollection.find({ members: { $in: [userId] } }).toArray();
 
-        const conversationUserData = Promise.all(conversations.map(async (conversation) => {
-          const conversationId = conversation._id;
-          const conversationUserId = conversation.members.find(m => m !== userId);
-          const user = await usersCollection.findOne({ _id: new ObjectId(conversationUserId) });
-          return { user, conversationId };
-        }));
-        res.send(await conversationUserData);
-      } catch (error) {
-        console.error(error);
-        res.status(500).send("An error occurred while fetching conversations.");
-      }
-    });
+    //     const conversationUserData = Promise.all(conversations.map(async (conversation) => {
+    //       const conversationId = conversation._id;
+    //       const conversationUserId = conversation.members.find(m => m !== userId);
+    //       const user = await usersCollection.findOne({ _id: new ObjectId(conversationUserId) });
+    //       return { user, conversationId };
+    //     }));
+    //     res.send(await conversationUserData);
+    //   } catch (error) {
+    //     console.error(error);
+    //     res.status(500).send("An error occurred while fetching conversations.");
+    //   }
+    // });
 
-    socketIO.on('connection', socket => {
-      console.log('A user connected');
+    // socketIO.on('connection', socket => {
+    //   console.log('A user connected');
 
-      socket.on('conversationId', async (conversationId) => {
-        socket.join(conversationId);
-        const messages = await messageCollection.find({ conversationId: conversationId }).toArray();
-        socket.emit('allMessages', messages);
-      });
+    //   socket.on('conversationId', async (conversationId) => {
+    //     socket.join(conversationId);
+    //     const messages = await messageCollection.find({ conversationId: conversationId }).toArray();
+    //     socket.emit('allMessages', messages);
+    //   });
 
-      socket.on('chatMessage', async (messageData) => {
-        const newMessage = await messageCollection.insertOne(messageData);
-        const messages = await messageCollection.find({ conversationId: messageData.conversationId }).toArray();
+    //   socket.on('chatMessage', async (messageData) => {
+    //     const newMessage = await messageCollection.insertOne(messageData);
+    //     const messages = await messageCollection.find({ conversationId: messageData.conversationId }).toArray();
 
-        // Emit the new message to all sockets in the conversation
-        socketIO.to(messageData.conversationId).emit('allMessages', messages);
-      });
+    //     // Emit the new message to all sockets in the conversation
+    //     socketIO.to(messageData.conversationId).emit('allMessages', messages);
+    //   });
 
-      socket.on('disconnect', () => {
-        console.log('User disconnected');
-      });
-    });
+    //   socket.on('disconnect', () => {
+    //     console.log('User disconnected');
+    //   });
+    // });
 
 
 
@@ -804,12 +804,12 @@ async function run() {
 run().catch(console.dir);
 // mongodb end
 
-// app.listen(port, () => {
-//   console.log(`Server is running on port ${port}`)
-// })    
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`)
+})    
 
 
 
-server.listen(port, (req, res) => {
-  console.log(`server is listening on port ${port}`);
-});
+// server.listen(port, (req, res) => {
+//   console.log(`server is listening on port ${port}`);
+// });
