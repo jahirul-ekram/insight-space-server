@@ -7,7 +7,6 @@ const cors = require('cors');
 require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
-// const SSLCommerzPayment = require('sslcommerz-lts')
 const SSLCommerzPayment = require('sslcommerz-lts')
 const app = express();
 const port = process.env.PORT || 5000;
@@ -109,7 +108,7 @@ async function run() {
     const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
     const paymentCollection = client.db("insight-space").collection("payment")
     const messageCollection = client.db("insight-space").collection("chatMessage")
-    const chatConversationCollection = client.db("insight-space").collection("chatConversation")
+    // const chatConversationCollection = client.db("insight-space").collection("chatConversation")
 
 
     // for find admin 
@@ -207,7 +206,7 @@ async function run() {
       res.send(sUser);
     });
 
-    app.post('/conversation', async (req, res) => {
+    app.post('/conversation', verifyJWT, async (req, res) => {
       const { senderId, receiverId } = req.body;
       const conversation = {
         members: [senderId, receiverId]
@@ -289,6 +288,16 @@ async function run() {
         const updateDoc = {
           $set: {
             react: allReact,
+          },
+        };
+        const result = await postsCollection.updateOne(query, updateDoc);
+        res.send(result)
+      }
+      else {
+        const availableReact = react1.filter(r => r !== data.email)
+        const updateDoc = {
+          $set: {
+            react: availableReact,
           },
         };
         const result = await postsCollection.updateOne(query, updateDoc);
@@ -778,10 +787,10 @@ async function run() {
     // // kakon socket api-----------------
 
     // // get conversation users
-    app.get('/conversation/:userId', async (req, res) => {
+    app.get('/conversation/:userId', verifyJWT, async (req, res) => {
       try {
         const userId = req.params.userId;
-        const conversations = await chatConversationCollection.find({ members: { $in: [userId] } }).toArray();
+        const conversations = await conversationCollection.find({ members: { $in: [userId] } }).toArray();
 
         const conversationUserData = Promise.all(conversations.map(async (conversation) => {
           const conversationId = conversation._id;
@@ -835,12 +844,24 @@ async function run() {
 run().catch(console.dir);
 // mongodb end
 
+
+
+
+server.listen(port, () => {
+  console.log(`socket server is listening on port ${port}`);
+});
+
 // app.listen(port, () => {
 //   console.log(`Server is running on port ${port}`)
 // })
 
 
 
-server.listen(port, (req, res) => {
-  console.log(`server is listening on port ${port}`);
-});
+
+
+
+
+
+
+
+
