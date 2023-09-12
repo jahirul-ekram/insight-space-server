@@ -782,7 +782,7 @@ async function run() {
 
     })
 
-    app.get("/exam-test", verifyJWT, async (req, res) => {
+    app.get("/exam-test",  async (req, res) => {
       const email = req.query.email;
       const query = { email: email }
       const result = await quizExamCollection.find(query).sort({ date: -1 }).toArray();
