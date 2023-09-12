@@ -110,17 +110,17 @@ async function run() {
     }
 
 
-      // find instructor 
-      app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
-        const email = req.params?.email;
-        if (req.decoded.email !== email) {
-          res.send({ instructor: false })
-        }
-        const query = { email: email }
-        const user = await usersCollection.findOne(query);
-        const result = { instructor: user?.role === 'instructor' }
-        res.send(result);
-      });
+    // find instructor 
+    app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+      const email = req.params?.email;
+      if (req.decoded.email !== email) {
+        res.send({ instructor: false })
+      }
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      const result = { instructor: user?.role === 'instructor' }
+      res.send(result);
+    });
 
     // for verify by instructor 
     const verifyInstructor = async (req, res, next) => {
@@ -181,6 +181,9 @@ async function run() {
         const result = await usersCollection.insertOne(newUser);
         const result1 = await connectionsCollection.insertOne(connection);
         res.send({ result, result1 })
+      }
+      else {
+        res.send("user Already joined")
       }
     })
 
