@@ -108,7 +108,7 @@ async function run() {
     const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
     const paymentCollection = client.db("insight-space").collection("payment")
     const messageCollection = client.db("insight-space").collection("chatMessage")
-    const chatConversationCollection = client.db("insight-space").collection("chatConversation")
+    // const chatConversationCollection = client.db("insight-space").collection("chatConversation")
     const quizExamCollection = client.db("insight-space").collection("quizExam")
 
 
@@ -200,21 +200,25 @@ async function run() {
     })
 
     // single user for soket io 
-    app.get("/chat/singleUser/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const sUser = await usersCollection.findOne(query);
-      res.send(sUser);
-    });
-
-    app.post('/conversation', verifyJWT, async (req, res) => {
-      const { senderId, receiverId } = req.body;
-      const conversation = {
-        members: [senderId, receiverId]
-      }
-      const newConversation = await conversationCollection.insertOne(conversation)
-      res.send(newConversation);
-    });
+    // / save conversation 
+        app.post('/conversation', async (req, res) => {
+            const { senderId, receiverId } = req.body;
+            const query = {
+                members: {
+                    $all: [senderId, receiverId]
+                }
+            };
+            const result = await conversationCollection.findOne(query);
+            if (result) {
+                res.json("already_Created")
+            }else{
+                const conversation = {
+                    members: [senderId, receiverId]
+                }
+                const newConversation = await conversationCollection.insertOne(conversation)
+                res.send(newConversation);
+            }
+        });
 
 
     // for insert users
