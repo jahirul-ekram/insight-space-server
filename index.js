@@ -1,9 +1,13 @@
 const express = require('express');
+// // socket.io
+// const http = require('http');
+// const socketIo = require('socket.io');
+// cors
 const cors = require('cors');
-// const SSLCommerzPayment = require('sslcommerz-lts')
 require('dotenv').config()
 const uuid = require('uuid');
 const jwt = require('jsonwebtoken');
+// const SSLCommerzPayment = require('sslcommerz-lts')
 const SSLCommerzPayment = require('sslcommerz-lts')
 const app = express();
 const port = process.env.PORT || 5000;
@@ -15,9 +19,29 @@ const stripe = require('stripe')(process.env.PAYMENT_KEY)
 // const is_live = false //true for live, false for sandbox
 
 
-// middleware 
-app.use(cors());
+// middleware
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  credentials: true,
+  optionSuccessStatus: 200,
+}
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// // socket.io
+// const server = http.createServer(app);
+// const socketIO = socketIo(server, {
+//   cors: {
+//     origin: 'http://localhost:5173',
+//     methods: ['GET', 'POST'],
+//     credentials: true,
+//     allowedHeaders: ['Access-Control-Allow-Origin']
+//   },
+//   maxHttpBufferSize: 1e8
+// });
+
+
 
 app.get('/', (req, res) => {
   res.send('server running')
@@ -84,6 +108,8 @@ async function run() {
     const connectionsCollection = client.db("insight-space").collection("connections");
     const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
     const paymentCollection = client.db("insight-space").collection("payment")
+    const messageCollection = client.db("insight-space").collection("chatMessage")
+    const chatConversationCollection = client.db("insight-space").collection("chatConversation")
 
 
     // for find admin 
@@ -726,6 +752,47 @@ async function run() {
       res.send(result)
     })
 
+    // // kakon socket api-----------------
+    // // get conversation users
+    // app.get('/conversation/:userId', async (req, res) => {
+    //   try {
+    //     const userId = req.params.userId;
+    //     const conversations = await chatConversationCollection.find({ members: { $in: [userId] } }).toArray();
+
+    //     const conversationUserData = Promise.all(conversations.map(async (conversation) => {
+    //       const conversationId = conversation._id;
+    //       const conversationUserId = conversation.members.find(m => m !== userId);
+    //       const user = await usersCollection.findOne({ _id: new ObjectId(conversationUserId) });
+    //       return { user, conversationId };
+    //     }));
+    //     res.send(await conversationUserData);
+    //   } catch (error) {
+    //     console.error(error);
+    //     res.status(500).send("An error occurred while fetching conversations.");
+    //   }
+    // });
+
+    // socketIO.on('connection', socket => {
+    //   console.log('A user connected');
+
+    //   socket.on('conversationId', async (conversationId) => {
+    //     socket.join(conversationId);
+    //     const messages = await messageCollection.find({ conversationId: conversationId }).toArray();
+    //     socket.emit('allMessages', messages);
+    //   });
+
+    //   socket.on('chatMessage', async (messageData) => {
+    //     const newMessage = await messageCollection.insertOne(messageData);
+    //     const messages = await messageCollection.find({ conversationId: messageData.conversationId }).toArray();
+
+    //     // Emit the new message to all sockets in the conversation
+    //     socketIO.to(messageData.conversationId).emit('allMessages', messages);
+    //   });
+
+    //   socket.on('disconnect', () => {
+    //     console.log('User disconnected');
+    //   });
+    // });
 
 
 
@@ -743,3 +810,9 @@ run().catch(console.dir);
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`)
 })    
+
+
+
+// server.listen(port, (req, res) => {
+//   console.log(`server is listening on port ${port}`);
+// });
