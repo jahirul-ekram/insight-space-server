@@ -108,7 +108,8 @@ async function run() {
     const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
     const paymentCollection = client.db("insight-space").collection("payment")
     const messageCollection = client.db("insight-space").collection("chatMessage")
-    // const chatConversationCollection = client.db("insight-space").collection("chatConversation")
+    const chatConversationCollection = client.db("insight-space").collection("chatConversation")
+    const quizExamCollection = client.db("insight-space").collection("quizExam")
 
 
     // for find admin 
@@ -781,6 +782,19 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
       const result = await paymentCollection.deleteOne(query);
+      res.send(result)
+    })
+    app.post('/mock-test', verifyJWT, async (req, res) => {
+      const feedback = req.body;
+      const result = await quizExamCollection.insertOne(feedback);
+      res.send(result);
+
+    })
+
+    app.get("/exam-test", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email }
+      const result = await quizExamCollection.find(query).sort({ date: -1 }).toArray();
       res.send(result)
     })
 
