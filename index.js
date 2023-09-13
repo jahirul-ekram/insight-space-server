@@ -20,7 +20,7 @@ const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
 // middleware
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: 'https://insight-space-f2643.web.app',
   credentials: true,
   optionSuccessStatus: 200,
 }
