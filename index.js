@@ -40,7 +40,7 @@ const socketIO = socketIo(server, {
   maxHttpBufferSize: 1e8
 });
 
-
+  //  
 
 app.get('/', (req, res) => {
   res.send('server running')
@@ -790,7 +790,7 @@ async function run() {
         }
       }
       else {
-        const result = await usersCollection.updateOne({ email: payment.email }, { $set: { role: "premiumUser" } });
+        const result = await usersCollection.updateOne({ email: payment.email }, { $set: { role: "premium" } });
         res.send(result)
       }
     })
