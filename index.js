@@ -108,7 +108,7 @@ async function run() {
     const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
     const paymentCollection = client.db("insight-space").collection("payment")
     const messageCollection = client.db("insight-space").collection("chatMessage")
-    // const chatConversationCollection = client.db("insight-space").collection("chatConversation")
+    const instructorsCollection = client.db("insight-space").collection("instructors")
     const quizExamCollection = client.db("insight-space").collection("quizExam")
 
 
@@ -180,6 +180,11 @@ async function run() {
       res.send(result)
     })
 
+    app.get("/users-payment", async (req, res) => {
+      const result = await sslPaymentsCollection.find().toArray();
+      res.send(result)
+    })
+
     // for get all post 
     app.get("/posts", async (req, res) => {
       const result = await postsCollection.find().sort({ date: -1 }).toArray();
@@ -194,31 +199,36 @@ async function run() {
     })
 
     // for get all quiz 
-    app.get("/quiz", async (req, res) => {
+    app.get("/quiz", verifyJWT, async (req, res) => {
       const result = await quizCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.get("/all-instructors", verifyJWT, async (req, res) => {
+      const result = await paymentCollection.find().sort({ date: -1 }).toArray();
       res.send(result)
     })
 
     // single user for soket io 
     // / save conversation 
-        app.post('/conversation', async (req, res) => {
-            const { senderId, receiverId } = req.body;
-            const query = {
-                members: {
-                    $all: [senderId, receiverId]
-                }
-            };
-            const result = await conversationCollection.findOne(query);
-            if (result) {
-                res.json("already_Created")
-            }else{
-                const conversation = {
-                    members: [senderId, receiverId]
-                }
-                const newConversation = await conversationCollection.insertOne(conversation)
-                res.send(newConversation);
-            }
-        });
+    app.post('/conversation', async (req, res) => {
+      const { senderId, receiverId } = req.body;
+      const query = {
+        members: {
+          $all: [senderId, receiverId]
+        }
+      };
+      const result = await conversationCollection.findOne(query);
+      if (result) {
+        res.json("already_Created")
+      } else {
+        const conversation = {
+          members: [senderId, receiverId]
+        }
+        const newConversation = await conversationCollection.insertOne(conversation)
+        res.send(newConversation);
+      }
+    });
 
 
     // for insert users
@@ -765,15 +775,17 @@ async function run() {
     })
 
 
-    app.post('/payments', async (req, res) => {
+    app.post('/payments', verifyJWT, async (req, res) => {
       const payment = req.body;
-      const insertResult = await paymentCollection.insertOne(payment)
-
-      // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-      // const deleteResult = await enrollCollection.deleteMany()
-
-      // res.send({result: insertResult, deleteResult});
-      res.send(insertResult)
+      const availablePayment = await paymentCollection.findOne({ email: payment.email })
+      if (!availablePayment) {
+        const insertResult = await paymentCollection.insertOne(payment)
+        const result = await usersCollection.updateOne({ email: payment.email }, { $set: { role: "instructor" } });
+        res.send({ insertResult, result });
+      }
+      else {
+        res.send("you have already get this package")
+      }
     })
 
     app.get("/payments-history", verifyJWT, async (req, res) => {
@@ -795,7 +807,7 @@ async function run() {
 
     })
 
-    app.get("/exam-test",  async (req, res) => {
+    app.get("/exam-test", async (req, res) => {
       const email = req.query.email;
       const query = { email: email }
       const result = await quizExamCollection.find(query).sort({ date: -1 }).toArray();
