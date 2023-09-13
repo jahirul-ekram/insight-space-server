@@ -32,7 +32,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const socketIO = socketIo(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: 'https://insight-space-f2643.web.app',
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['Access-Control-Allow-Origin']
