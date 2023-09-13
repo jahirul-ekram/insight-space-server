@@ -205,7 +205,7 @@ async function run() {
     })
 
     app.get("/all-instructors", verifyJWT, async (req, res) => {
-      const result = await paymentCollection.find().sort({ date: -1 }).toArray();
+      const result = await paymentCollection.find().sort({ date: -1 }).project({ instructorData: 1 }).toArray();
       res.send(result)
     })
 
@@ -777,14 +777,21 @@ async function run() {
 
     app.post('/payments', verifyJWT, async (req, res) => {
       const payment = req.body;
-      const availablePayment = await paymentCollection.findOne({ email: payment.email })
-      if (!availablePayment) {
-        const insertResult = await paymentCollection.insertOne(payment)
-        const result = await usersCollection.updateOne({ email: payment.email }, { $set: { role: "instructor" } });
-        res.send({ insertResult, result });
+      const instructorRequest = payment?.instructorData?.email;
+      if (instructorRequest) {
+        const availablePayment = await paymentCollection.findOne({ email: payment.email })
+        if (!availablePayment) {
+          const insertResult = await paymentCollection.insertOne(payment)
+          const result = await usersCollection.updateOne({ email: payment.email }, { $set: { role: "instructor" } });
+          res.send({ insertResult, result });
+        }
+        else {
+          res.send("you have already get this package")
+        }
       }
       else {
-        res.send("you have already get this package")
+        const result = await usersCollection.updateOne({ email: payment.email }, { $set: { role: "premiumUser" } });
+        res.send(result)
       }
     })
 
