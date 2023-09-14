@@ -14,7 +14,7 @@ const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
 // middleware
 const corsOptions = {
-  origin: 'https://insight-space-f2643.web.app',
+  origin: 'http://localhost:5173',
   credentials: true,
   optionSuccessStatus: 200,
 }
@@ -26,7 +26,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const socketIO = socketIo(server, {
   cors: {
-    origin: 'https://insight-space-f2643.web.app',
+    origin: 'http://localhost:5173',
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['Access-Control-Allow-Origin']
