@@ -877,8 +877,16 @@ async function run() {
       }
     });
 
+    const users = {};
+
     socketIO.on('connection', socket => {
       console.log('A user connected');
+
+
+      socket.on('user-connected', (userId) => {
+        users[userId] = 'online';
+        socketIO.emit('user-status', users);
+    });
 
       socket.on('conversationId', async (conversationId) => {
         socket.join(conversationId);
@@ -896,7 +904,12 @@ async function run() {
 
       socket.on('disconnect', () => {
         console.log('User disconnected');
-      });
+        const userId = Object.keys(users).find((key) => users[key] === socket.id);
+        if (userId) {
+            users[userId] = 'offline';
+            socketIO.emit('user-status', users);
+        }
+    });
     });
 
 
