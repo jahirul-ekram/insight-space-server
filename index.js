@@ -207,6 +207,14 @@ async function run() {
       res.send(result)
     })
 
+    app.patch("/user/coverPhoto", verifyJWT, async (req, res) => {
+      const { coverPhotoURL, email } = req.body;
+      const query = { email: email };
+      const result = await usersCollection.updateOne(query, { $set: { coverPhotoURL: coverPhotoURL } }, { upsert: true });
+      res.send(result);
+    })
+
+
     app.get("/users-payment", async (req, res) => {
       const result = await sslPaymentsCollection.find().toArray();
       res.send(result)
