@@ -244,28 +244,7 @@ async function run() {
       res.send(result)
     })
 
-    // single user for soket io 
-    // / save conversation 
-    app.post('/conversation', async (req, res) => {
-      const { senderId, receiverId } = req.body;
-      const query = {
-        members: {
-          $all: [senderId, receiverId]
-        }
-      };
-      const result = await conversationCollection.findOne(query);
-      if (result) {
-        res.json("already_Created")
-      } else {
-        const conversation = {
-          members: [senderId, receiverId]
-        }
-        const newConversation = await conversationCollection.insertOne(conversation)
-        res.send(newConversation);
-      }
-    });
-
-
+  
     // for insert users
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;
@@ -858,24 +837,7 @@ async function run() {
 
     // // kakon socket api-----------------
 
-    // // get conversation users ----------------
-    app.get('/conversation/:userId', verifyJWT, async (req, res) => {
-      try {
-        const userId = req.params.userId;
-        const conversations = await conversationCollection.find({ members: { $in: [userId] } }).toArray();
-
-        const conversationUserData = Promise.all(conversations.map(async (conversation) => {
-          const conversationId = conversation._id;
-          const conversationUserId = conversation.members.find(m => m !== userId);
-          const user = await usersCollection.findOne({ _id: new ObjectId(conversationUserId) });
-          return { user, conversationId };
-        }));
-        res.send(await conversationUserData);
-      } catch (error) {
-        console.error(error);
-        res.status(500).send("An error occurred while fetching conversations.");
-      }
-    });
+ 
 
     const users = {};
 
@@ -886,7 +848,51 @@ async function run() {
       socket.on('user-connected', (userId) => {
         users[userId] = 'online';
         socketIO.emit('user-status', users);
-    });
+      });
+
+
+
+      socket.on("getSingleUser", async (email) => {
+        const query = { email: email };
+        const sUser = await usersCollection.findOne(query);
+        socket.emit('userData', JSON.stringify(sUser));
+      })
+
+      socket.on("addConversation", async ({ senderId, receiverId }) => {
+        const query = {
+          members: {
+            $all: [senderId, receiverId]
+          }
+        };
+        const result = await conversationCollection.findOne(query);
+        if (result) {
+          // res.json("already_Created")
+          console.log(result);
+          socket.emit("conversation", "already_created")
+        } else {
+          const conversation = {
+            members: [senderId, receiverId]
+          }
+          const newConversation = await conversationCollection.insertOne(conversation)
+          // res.send(newConversation);
+          socket.emit("conversation", newConversation);
+        }
+      })
+
+      socket.on("getConversationData", async (userId) => {
+        const conversations = await conversationCollection.find({ members: { $in: [userId] } }).toArray();
+
+        const conversationUserData = Promise.all(conversations.map(async (conversation) => {
+          const conversationId = conversation._id;
+          const conversationUserId = conversation.members.find(m => m !== userId);
+          const user = await usersCollection.findOne({ _id: new ObjectId(conversationUserId) });
+          return { user, conversationId };
+        }));
+        socket.emit("conversationUserData", await conversationUserData);
+
+        // res.send(await conversationUserData);
+
+      })
 
       socket.on('conversationId', async (conversationId) => {
         socket.join(conversationId);
@@ -906,10 +912,10 @@ async function run() {
         console.log('User disconnected');
         const userId = Object.keys(users).find((key) => users[key] === socket.id);
         if (userId) {
-            users[userId] = 'offline';
-            socketIO.emit('user-status', users);
+          users[userId] = 'offline';
+          socketIO.emit('user-status', users);
         }
-    });
+      });
     });
 
 
