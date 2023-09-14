@@ -12,15 +12,9 @@ const app = express();
 const port = process.env.PORT || 5000;
 const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
-
-// const store_id = process.env.Store_ID
-// const store_passwd = process.env.Store_Pass
-// const is_live = false //true for live, false for sandbox
-
-
 // middleware
 const corsOptions = {
-  origin: 'https://insight-space-f2643.web.app',
+  origin: 'http://localhost:5173',
   credentials: true,
   optionSuccessStatus: 200,
 }
@@ -32,7 +26,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const socketIO = socketIo(server, {
   cors: {
-    origin: 'https://insight-space-f2643.web.app',
+    origin: 'http://localhost:5173',
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['Access-Control-Allow-Origin']
@@ -40,7 +34,7 @@ const socketIO = socketIo(server, {
   maxHttpBufferSize: 1e8
 });
 
-  //  
+//  
 
 app.get('/', (req, res) => {
   res.send('server running')
@@ -108,7 +102,6 @@ async function run() {
     const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
     const paymentCollection = client.db("insight-space").collection("payment")
     const messageCollection = client.db("insight-space").collection("chatMessage")
-    const instructorsCollection = client.db("insight-space").collection("instructors")
     const quizExamCollection = client.db("insight-space").collection("quizExam")
 
 
@@ -158,6 +151,40 @@ async function run() {
       }
       next();
     }
+
+
+    // verify premium users 
+    app.get('/users/premiumUser/:email', verifyJWT, async (req, res) => {
+      const email = req.params?.email;
+      if (req.decoded.email !== email) {
+        res.send({ premiumUser: false })
+      }
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      const result = { premiumUser: user?.role === 'premium' }
+      res.send(result);
+    });
+
+    // for verify by instructor 
+    const verifyPremiumUser = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== 'premium') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 
