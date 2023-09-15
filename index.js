@@ -289,6 +289,12 @@ async function run() {
       res.send(result);
     })
 
+    //  get all payment for admin 
+    app.get("/payment-history", verifyJWT, verifyAdmin, async (req, res) => {
+      const result = await paymentCollection.find().sort({ date: -1 }).project({ instructorData: 0 }).toArray();
+      res.send(result)
+    })
+
     // for insert post 
     app.post("/posts", verifyJWT, async (req, res) => {
       const post = req.body;
