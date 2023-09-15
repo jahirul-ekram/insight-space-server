@@ -14,7 +14,7 @@ const stripe = require('stripe')(process.env.PAYMENT_KEY)
 
 // middleware
 const corsOptions = {
-  origin: 'http://localhost:5173',
+  origin: 'https://insight-space-f2643.web.app',
   credentials: true,
   optionSuccessStatus: 200,
 }
@@ -26,7 +26,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const socketIO = socketIo(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: 'https://insight-space-f2643.web.app',
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['Access-Control-Allow-Origin']
@@ -177,9 +177,6 @@ async function run() {
     }
 
 
-
-
-
     // for display all users 
     app.get("/allUsers", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().sort({ date: -1 }).toArray();
@@ -204,12 +201,6 @@ async function run() {
       const query = { email: email };
       const result = await usersCollection.updateOne(query, { $set: { coverPhotoURL: coverPhotoURL } }, { upsert: true });
       res.send(result);
-    })
-
-
-    app.get("/users-payment", async (req, res) => {
-      const result = await sslPaymentsCollection.find().toArray();
-      res.send(result)
     })
 
     // for get all post 
