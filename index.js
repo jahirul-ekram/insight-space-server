@@ -103,7 +103,7 @@ async function run() {
     const paymentCollection = client.db("insight-space").collection("payment")
     const messageCollection = client.db("insight-space").collection("chatMessage")
     const quizExamCollection = client.db("insight-space").collection("quizExam")
-
+    const instructorQuizCollection = client.db("insight-space").collection("instructorQuiz")
 
     // for find admin 
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -180,14 +180,6 @@ async function run() {
 
 
 
-
-
-
-
-
-
-
-
     // for display all users 
     app.get("/allUsers", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().sort({ date: -1 }).toArray();
@@ -233,6 +225,22 @@ async function run() {
       res.send(result)
     })
 
+    // TODO : manage quiz data
+    // post quiz by instructors
+    app.post("/instructorQuiz", verifyJWT, verifyInstructor, async (req, res) => {
+      const newQuiz = req.body;
+      // const { instructor, categoryName } = newQuiz;
+      const result = await instructorQuizCollection.insertOne(newQuiz);
+      res.send(result);
+    })
+
+    app.get("/instructorQuiz", verifyJWT, verifyInstructor, async (req, res) => {
+      const instructor = req.query.email;
+      const result = await instructorQuizCollection.find({ instructor: instructor }).toArray();
+      res.send(result);
+    })
+
+
     // for get all quiz 
     app.get("/quiz", verifyJWT, async (req, res) => {
       const result = await quizCollection.find().toArray();
@@ -244,7 +252,7 @@ async function run() {
       res.send(result)
     })
 
-  
+
     // for insert users
     app.post("/add-user", async (req, res) => {
       const newUser = req.body;
@@ -837,7 +845,7 @@ async function run() {
 
     // // kakon socket api-----------------
 
- 
+
 
     const users = {};
 
