@@ -185,7 +185,7 @@ async function run() {
     })
 
     app.get("/chat/allUsers", verifyJWT, async (req, res) => {
-      const result = await usersCollection.find().sort({ date: -1 }).toArray();
+      const result = await usersCollection.find().sort({displayName:1}).toArray();
       res.send(result)
     })
 
@@ -912,6 +912,9 @@ async function run() {
         // Emit the new message to all sockets in the conversation
         socketIO.to(messageData.conversationId).emit('allMessages', messages);
       });
+      socket.on("deleteMessage", (msgId)=>{
+        console.log(msgId);
+      })
 
       socket.on('disconnect', () => {
         console.log('User disconnected');
