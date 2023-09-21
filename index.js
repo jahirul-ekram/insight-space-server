@@ -14,7 +14,7 @@ const stripe = require("stripe")(process.env.PAYMENT_KEY);
 
 // middleware
 const corsOptions = {
-  origin: ["http://localhost:5173", "https://insight-space-f2643.web.app"],
+  origin: ["http://localhost:5173","https://insight-space-f2643.web.app"],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -26,7 +26,7 @@ app.use(express.json());
 const server = http.createServer(app);
 const socketIO = socketIo(server, {
   cors: {
-    origin: ["http://localhost:5173", "https://insight-space-f2643.web.app"],
+    origin: ["http://localhost:5173","https://insight-space-f2643.web.app"],
     methods: ["GET", "POST"],
     credentials: true,
     allowedHeaders: ["Access-Control-Allow-Origin"],
@@ -94,35 +94,16 @@ async function run() {
     // await client.connect();
     const usersCollection = client.db("insight-space").collection("users");
     const postsCollection = client.db("insight-space").collection("allPosts");
-    const bookMarksCollection = client
-      .db("insight-space")
-      .collection("book-marks");
-    const feedbackCollection = client
-      .db("insight-space")
-      .collection("feedback");
-    const conversationCollection = client
-      .db("insight-space")
-      .collection("conversations");
-    const friendRequestCollection = client
-      .db("insight-space")
-      .collection("friendRequests");
+    const bookMarksCollection = client.db("insight-space").collection("book-marks");
+    const feedbackCollection = client.db("insight-space").collection("feedback");
+    const conversationCollection = client.db("insight-space").collection("conversations");
+    const friendRequestCollection = client.db("insight-space").collection("friendRequests");
     const quizCollection = client.db("insight-space").collection("quiz");
-    const connectionsCollection = client
-      .db("insight-space")
-      .collection("connections");
-    const sslPaymentsCollection = client
-      .db("insight-space")
-      .collection("sslPayments");
+    const connectionsCollection = client.db("insight-space").collection("connections");
+    const sslPaymentsCollection = client.db("insight-space").collection("sslPayments");
     const paymentCollection = client.db("insight-space").collection("payment");
-    const messageCollection = client
-      .db("insight-space")
-      .collection("chatMessage");
-    const quizExamCollection = client
-      .db("insight-space")
-      .collection("quizExam");
-    const instructorQuizCollection = client
-      .db("insight-space")
-      .collection("instructorQuiz");
+    const messageCollection = client.db("insight-space").collection("chatMessage");
+    const quizExamCollection = client.db("insight-space").collection("quizExam");
 
     // for find admin
     app.get("/users/admin/:email", verifyJWT, async (req, res) => {
@@ -206,10 +187,7 @@ async function run() {
     });
 
     app.get("/chat/allUsers", verifyJWT, async (req, res) => {
-      const result = await usersCollection
-        .find()
-        .sort({ displayName: 1 })
-        .toArray();
+      const result = await usersCollection.find().sort({ displayName: 1 }).toArray();
       res.send(result);
     });
 
@@ -246,29 +224,19 @@ async function run() {
 
     // TODO : manage quiz data
     // post quiz by instructors
-    app.post(
-      "/instructorQuiz",
-      verifyJWT,
-      verifyInstructor,
-      async (req, res) => {
-        const newQuiz = req.body;
-        // const { instructor, categoryName } = newQuiz;
-        const result = await instructorQuizCollection.insertOne(newQuiz);
-        res.send(result);
-      }
+    app.post("/instructorQuiz", verifyJWT, verifyInstructor, async (req, res) => {
+      const newQuiz = req.body;
+      // const { instructor, categoryName } = newQuiz;
+      const result = await quizCollection.insertOne(newQuiz);
+      res.send(result);
+    }
     );
 
-    app.get(
-      "/instructorQuiz",
-      verifyJWT,
-      verifyInstructor,
-      async (req, res) => {
-        const instructor = req.query.email;
-        const result = await instructorQuizCollection
-          .find({ instructor: instructor })
-          .toArray();
-        res.send(result);
-      }
+    app.get("/instructorQuiz", verifyJWT, verifyInstructor, async (req, res) => {
+      const instructor = req.query.email;
+      const result = await quizCollection.find({ instructor: instructor }).toArray();
+      res.send(result);
+    }
     );
 
     // for get all quiz
@@ -278,11 +246,7 @@ async function run() {
     });
 
     app.get("/all-instructors", verifyJWT, async (req, res) => {
-      const result = await paymentCollection
-        .find()
-        .sort({ date: -1 })
-        .project({ instructorData: 1 })
-        .toArray();
+      const result = await paymentCollection.find().sort({ date: -1 }).project({ instructorData: 1 }).toArray();
       res.send(result);
     });
 
