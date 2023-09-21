@@ -777,8 +777,8 @@ async function run() {
         total_amount: formData?.number,
         currency: "BDT",
         tran_id: transaction_Id, // use unique tran_id for each api call
-        success_url: `https://insight-space-server.vercel.app/payment/success/${transaction_Id}`,
-        fail_url: `https://insight-space-server.vercel.app/payment/fail/${transaction_Id}`,
+        success_url: `https://insight-space-server.onrender.com/payment/success/${transaction_Id}`,
+        fail_url: `https://insight-space-server.onrender.com/payment/fail/${transaction_Id}`,
         cancel_url: "http://localhost:3030/cancel",
         ipn_url: "http://localhost:3030/ipn",
         shipping_method: "Courier",
