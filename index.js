@@ -304,6 +304,16 @@ async function run() {
       }
     });
 
+    // update post
+    app.patch("/update-post", verifyJWT, async (req, res) => {
+      const { text, id } = req.body;
+      const query = { _id: new ObjectId(id) };
+      const result = await postsCollection.updateOne(query, {
+        $set: { text: text },
+      });
+      res.send(result);
+    });
+
     // for Update users profile kakan Chandra
     app.patch("/update_profile", verifyJWT, async (req, res) => {
       const update_profile_data = req.body;
@@ -316,7 +326,7 @@ async function run() {
           photoURL: update_profile_data.photoURL,
           lastUpdate: update_profile_data.lastUpdate,
           title: update_profile_data.title,
-          address: update_profile_data.address
+          address: update_profile_data.address,
         },
       };
       const result = await usersCollection.updateOne(
